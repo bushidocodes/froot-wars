@@ -4,6 +4,17 @@ var game = {
   // Coordinates of the slingshot
   slingshotX: 140,
   slingshotY: 280,
+
+  // Max panning speed per frame in pixels
+  maxSpeed: 3,
+  // Max and min panning offset
+  minOffset: 0,
+  maxOffset: 300,
+  // Current panning offset
+  offsetLeft: 0,
+  // The game score
+  score: 0,
+
   init: function () {
     //Initialize objects
     levels.init();
@@ -28,13 +39,64 @@ var game = {
     $('#gamecanvas').show();
     $('#scorescreen').show();
     game.mode = 'intro';
-    game.offsetLeft = 0;
+    game.offsetLeft = 0; // offset value for how far our screen has panned right
     game.ended = false;
     game.animationFrame = window.requestAnimationFrame(game.animate, game.canvas);
   },
 
+  // Pan the screen to center on newCenter
+  panTo: function (newCenter) {
+    if ( // Check to see if the newCenter is within a quarter of the game screen in either direction and if the offset is within min and max bounds
+      Math.abs(newCenter - game.offsetLeft - game.canvas.width / 4) > 0 //
+      && game.offsetLeft <= game.maxOffset
+      && game.offsetLeft >= game.minOffset
+    ) {
+      // Set deltaX to the mininum distance needed to get the newCenter within the center 50% of the screen.
+      // Why divide by 2 though????
+      var deltaX = Math.round((newCenter - game.offsetLeft - game.canvas.width / 4) / 2);
+      // Here maxSpeed seems to speed up panning, now slow it down???
+      if (deltaX && Math.abs(deltaX) > game.maxSpeed) {
+        deltaX = game.maxSpeed * Math.abs(deltaX) / (deltaX);
+      }
+      game.offsetLeft += deltaX;
+    } else {
+      return true;
+    }
+    if (game.offsetLeft < game.minOffset) {
+      game.offsetLeft = game.minOffset;
+      return true;
+    } else if (game.offsetLeft > game.maxOffset) {
+      game.offsetLeft = game.maxOffset;
+      return true;
+    }
+    return false;
+  },
+
   handlePanning: function () {
-    game.offsetLeft++; // Arbitrarily pans right. TODO: Enhance this
+    if (game.mode === 'intro') { //why coerce?
+      if (game.panTo(700)) {
+        game.mode = 'load-next-hero';
+      }
+    }
+
+    if (game.mode === 'load-next-hero') {
+      //TODO: Implement checking if out of heroes or if all villains are destroyed
+      //load hero and set mode to wait-for-firing
+      game.mode = 'wait-for-firing';
+    }
+
+    if (game.mode === 'wait-for-firing') {
+      if (mouse.dragging) { // pan right when player drags mouse right
+        game.panTo(mouse.x + game.offsetLeft);
+      } else { // auto pan back to slingshot when player is not dragging mouse to pan right
+        game.panTo(game.slingshotX);
+      }
+    }
+
+
+    if (game.mode === 'firing') {
+      //TODO Pan to hero to follow them in-flight
+    }
   },
 
   animate: function () {

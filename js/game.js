@@ -8,6 +8,7 @@ var game = {
     //Initialize objects
     levels.init();
     loader.init();
+    mouse.init();
 
     // Hide the game and show the start screen
     $('.gamelayer').hide();
@@ -46,8 +47,8 @@ var game = {
     game.context.drawImage(game.currentLevel.foregroundImage, game.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
 
     // Draw the slingshot
-    game.context.drawImage(game.slingshotImage, game.slingshotX-game.offsetLeft, game.slingshotY);
-    game.context.drawImage(game.slingshotFrontImage, game.slingshotX-game.offsetLeft, game.slingshotY);
+    game.context.drawImage(game.slingshotImage, game.slingshotX - game.offsetLeft, game.slingshotY);
+    game.context.drawImage(game.slingshotFrontImage, game.slingshotX - game.offsetLeft, game.slingshotY);
 
     if (!game.ended) {
       game.animationFrame = window.requestAnimationFrame(game.animate, game.canvas);
@@ -170,6 +171,43 @@ var loader = {
         loader.onload = undefined;
       }
     }
+  }
+}
+
+var mouse = {
+  x: 0,
+  y: 0,
+  down: false,
+  init: function () {
+    // Register jQuery Mouse Events with our mouse event handlers
+    // https://api.jquery.com/category/events/mouse-events/
+    $('#gamecanvas').mousemove(mouse.mousemovehandler);
+    $('#gamecanvas').mousedown(mouse.mousedownhandler);
+    $('#gamecanvas').mouseup(mouse.mouseuphandler);
+    $('#gamecanvas').mouseout(mouse.mouseuphandler);
+  },
+  // Handles general mouse movement on the canvas
+  mousemovehandler: function (ev) {
+    // Use jQuery offset() to be able to relate window coordinates to canvas coordiates
+    // https://api.jquery.com/offset/
+    var offset = $('#gamecanvas').offset();
+    mouse.x = ev.pageX - offset.left;
+    mouse.y = ev.pageY - offset.top;
+    if (mouse.down) {
+      mouse.dragging = true;
+    }
+  },
+  // Handles mouse clicks and drags
+  mousedownhandler: function (ev) {
+    mouse.down = true;
+    mouse.downX = mouse.x;
+    mouse.downY = mouse.y;
+    ev.originalEvent.preventDefault();
+  },
+  // Makes sure that clicks and drags are cut off when the mouse cursor leaves the canvas
+  mouseuphandler: function (ev) {
+    mouse.down = false;
+    mouse.dragging = false;
   }
 }
 

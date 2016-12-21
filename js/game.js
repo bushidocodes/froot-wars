@@ -10,6 +10,11 @@ const b2CircleShape = Box2D.Collision.Shapes.b2CircleShape;
 const b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
 const b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef;
 
+$(function () {
+  console.log("init");
+  game.init();
+});
+
 var game = {
   mode: 'intro',
   // Coordinates of the slingshot
@@ -25,6 +30,8 @@ var game = {
   offsetLeft: 0,
   // The game score
   score: 0,
+  // Fire Timer to prevent weird friction stuff from making game unplayable
+  fireTimer: 0,
 
   init: function () {
     //Initialize objects
@@ -165,6 +172,7 @@ var game = {
           (game.slingshotX + 35 - mouse.x - game.offsetLeft) * impulseScaleFactor,
           (game.slingshotY + 25 - mouse.y) * impulseScaleFactor
         );
+        game.fireTimer = new Date().getTime();
         game.currentHero.ApplyImpulse(impulse, game.currentHero.GetWorldCenter());
       }
     }
@@ -172,9 +180,13 @@ var game = {
     if (game.mode === 'fired') {
       // Pan to where hero is
       var heroX = game.currentHero.GetPosition().x * box2d.scale;
+      //console.log("HERO :", game.currentHero);
       game.panTo(heroX);
       // And when the hero falls asleep or leaves the gameboard, delete him and load the next hero
-      if (!game.currentHero.IsAwake() || heroX < 0 || heroX > game.currentLevel.foregroundImage.width) {
+      var elapsedTime = (new Date().getTime() - game.fireTimer) / 1000;
+      console.log("Time: ", elapsedTime);
+      if (!game.currentHero.IsAwake() || heroX < 0 || heroX > game.currentLevel.foregroundImage.width || elapsedTime > 15) {
+        game.fireTimer = 0;
         box2d.world.DestroyBody(game.currentHero);
         game.currentHero = undefined;
         game.mode = 'load-next-hero';
@@ -216,6 +228,11 @@ var game = {
     // Draw bodies
     game.drawAllBodies();
 
+    // Draw the band when firing a hero
+    if (game.mode === 'firing') {
+      game.drawSlingshotBand();
+    }
+
     // Draw the front of the slingshot (comes after draw bodies... order matters so that things are layered right)
     game.context.drawImage(game.slingshotFrontImage, game.slingshotX - game.offsetLeft, game.slingshotY);
 
@@ -230,8 +247,18 @@ var game = {
     //strange loop that uses Box2D's GetBodyList and GetNext() methods
     for (var body = box2d.world.GetBodyList(); body; body = body.GetNext()) {
       var entity = body.GetUserData();
+      // if (body.IsAwake()) console.log(body);
       if (entity) {
-        entities.draw(entity, body.GetPosition(), body.GetAngle());
+        var entityX = body.GetPosition().x * box2d.scale;
+        if (entityX < 0 || entityX > game.currentLevel.foregroundImage.width || (entity.health && entity.health <= 0)) {
+          box2d.world.DestroyBody(body);
+          if (entity.type === 'villain') {
+            game.score += entity.calories;
+            $('#score').html('Score: ' + game.score);
+          }
+        } else {
+          entities.draw(entity, body.GetPosition(), body.GetAngle());
+        }
       }
     }
   },
@@ -257,10 +284,41 @@ var game = {
     game.lastUpdateTime = undefined;
     levels.load(game.currentLevel.number);
   },
-  restartLevel: function () {
+  startNextLevel: function () {
     window.cancelAnimationFrame(game.animationFrame);
     game.lastUpdateTime = undefined;
     levels.load(game.currentLevel.number + 1);
+  },
+  drawSlingshotBand: function () {
+    game.context.strokeStyle = 'rgb(68,31,11)';
+    game.context.lineWidth = 6;
+
+    var radius = game.currentHero.GetUserData().radius;
+    var heroX = game.currentHero.GetPosition().x * box2d.scale;
+    var heroY = game.currentHero.GetPosition().y * box2d.scale;
+    var angle = Math.atan2(game.slingshotY + 25 - heroY, game.slingshotX + 50 - heroX);
+    var heroFarEdgeX = heroX - radius * Math.cos(angle);
+    var heroFarEdgeY = heroY - radius * Math.sin(angle);
+
+    game.context.beginPath();
+    // Draw from rear top of slingshot
+    game.context.moveTo(game.slingshotX + 50 - game.offsetLeft, game.slingshotY + 25);
+    // to the center of the hero
+    game.context.lineTo(heroX - game.offsetLeft, heroY);
+    game.context.stroke();
+    // Draw the hero on the band
+    entities.draw(game.currentHero.GetUserData(), game.currentHero.GetPosition(), game.currentHero.GetAngle());
+    game.context.beginPath();
+    // Move to the edge of the hero
+    game.context.moveTo(heroFarEdgeX - game.offsetLeft, heroFarEdgeY);
+    // Draw line from the edge of the hero to the front top of slingshot
+    game.context.lineTo(game.slingshotX - game.offsetLeft + 10, game.slingshotY + 30);
+    game.context.stroke();
+
+
+
+    game.context.moveTo(game.slingshotX + 50 - game.offsetLeft, game.slingshotY + 25);
+
   }
 
 }
@@ -505,6 +563,7 @@ var levels = {
 
   // Load data and images for a selected level
   load: function (number) {
+    console.log("load called for ", number);
     box2d.init();
     game.currentLevel = {
       number: number,
@@ -636,30 +695,26 @@ var mouse = {
   }
 }
 
-$(window).on('load', function () {
-  game.init();
-});
-
 var entities = {
   definitions: {
-    glass: {
+    'glass': {
       fullHealth: 100,
       density: 2.4,
       friction: 0.4,
       restitution: 0.15
     },
-    wood: {
+    'wood': {
       fullHealth: 500,
       density: 0.7,
       friction: 0.4,
       restitution: 0.4
     },
-    dirt: {
+    'dirt': {
       density: 3.0,
-      friction: 1.9,
+      friction: 1.5,
       restitution: 0.2
     },
-    burger: {
+    'burger': {
       shape: 'circle',
       fullHealth: 40,
       radius: 25,
@@ -667,7 +722,7 @@ var entities = {
       friction: 0.5,
       restitution: 0.4
     },
-    sodacan: {
+    'sodacan': {
       shape: 'rectangle',
       fullHealth: 80,
       width: 40,
@@ -676,7 +731,7 @@ var entities = {
       friction: 0.5,
       restitution: 0.7
     },
-    fries: {
+    'fries': {
       shape: 'rectangle',
       fullHealth: 50,
       width: 40,
@@ -685,31 +740,35 @@ var entities = {
       friction: 0.5,
       restitution: 0.6
     },
-    apple: {
+    'apple': {
       shape: 'circle',
       radius: 25,
       density: 1.5,
-      friction: 0.5,
+      // friction: 0.5,
+      friction: 1,
       restitution: 0.4
     },
-    orange: {
+    'orange': {
       shape: 'circle',
       radius: 25,
       density: 1.5,
-      friction: 0.5,
+      // friction: 0.5,
+      friction: 1,
       restitution: 0.4
     },
-    strawberry: {
+    'strawberry': {
       shape: 'circle',
       radius: 15,
       density: 2.0,
-      friction: 0.5,
+      // friction: 0.5,
+      friction: 1,
       restitution: 0.4
     }
   },
   // Turn an entity definition into a Box2D object and add to game world
   create: function (entity) {
     var definition = entities.definitions[entity.name];
+    console.log('Definition is ', definition);
     if (!definition) {
       console.log(entity.name, " is undefined");
       return;
@@ -723,6 +782,7 @@ var entities = {
         box2d.createRectange(entity, definition);
         break;
       case "ground":
+        console.log("Creating ground with ", entity, definition);
         entity.shape = 'rectangle';
         box2d.createRectange(entity, definition);
         break;
@@ -820,6 +880,41 @@ var box2d = {
     debugDraw.SetLineThickness(1.0);
     debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
     box2d.world.SetDebugDraw(debugDraw);
+    // Add collision detection listeners
+    var listener = new Box2D.Dynamics.b2ContactListener;
+
+    // listener.PreSolve = function (contact, impulse) {
+    //   var body1 = contact.GetFixtureA().GetBody();
+    //   var body2 = contact.GetFixtureB().GetBody();
+    //   var entity1 = body1.GetUserData();
+    //   var entity2 = body2.GetUserData();
+
+    //   // if contact.
+    //   if (entity1.name === 'dirt' || entity2.name === 'dirt') {
+    //     console.log("Collision ", contact, " between ", entity1, entity2);
+    //     contact.SetFriction(2.0);
+    //   }
+    // }
+    listener.PostSolve = function (contact, impulse) {
+      // console.log(contact, impulse);
+      var body1 = contact.GetFixtureA().GetBody();
+      var body2 = contact.GetFixtureB().GetBody();
+      var entity1 = body1.GetUserData();
+      var entity2 = body2.GetUserData();
+
+      var impulseAlongNormal = Math.abs(impulse.normalImpulses[0]);
+      // Filter out tiny impulses
+      if (impulseAlongNormal > 5) {
+        // Reduce object health by impulse value if they have health
+        if (entity1.health) {
+          entity1.health -= impulseAlongNormal;
+        }
+        if (entity2.health) {
+          entity2.health -= impulseAlongNormal;
+        }
+      }
+    };
+    box2d.world.SetContactListener(listener);
   },
   createRectange(entity, definition) {
     var bodyDef = new b2BodyDef;
@@ -841,10 +936,11 @@ var box2d = {
     fixtureDef.shape.SetAsBox(entity.width / 2 / box2d.scale, entity.height / 2 / box2d.scale);
     var body = box2d.world.CreateBody(bodyDef);
     body.SetUserData(entity);
-    body.CreateFixture(fixtureDef);
+    var fixture = body.CreateFixture(fixtureDef);
     return body;
   },
   createCircle(entity, definition) {
+    console.log("Creating Circle with ", entity, definition);
     var bodyDef = new b2BodyDef;
     if (entity.isStatic) {
       bodyDef.type = b2Body.b2_staticBody;
@@ -863,9 +959,12 @@ var box2d = {
     fixtureDef.friction = definition.friction;
     fixtureDef.restitution = definition.restitution;
     fixtureDef.shape = new b2CircleShape(entity.radius / box2d.scale);
+    console.log("Circle fixture is ", fixtureDef);
     var body = box2d.world.CreateBody(bodyDef);
     body.SetUserData(entity);
-    body.CreateFixture(fixtureDef);
+
+    var fixture = body.CreateFixture(fixtureDef);
+    console.log("Final Circle body is now ", body);
     return body;
   },
   step: function (timeStep) {
@@ -873,3 +972,4 @@ var box2d = {
     box2d.world.Step(timeStep, box2d.velocityIterations, box2d.positionIterations);
   }
 }
+

@@ -114,20 +114,31 @@ var game = {
     // Animate the background
     game.handlePanning();
 
+    // TODO: Draw the characters
+
     // Draw the background with parallax
     // TODO: Use constants to be able to adjust size of gameboard.
     game.context.drawImage(game.currentLevel.backgroundImage, game.offsetLeft / 4, 0, 640, 480, 0, 0, 640, 480)
     game.context.drawImage(game.currentLevel.foregroundImage, game.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
 
-    // Draw the slingshot
+    // Draw the back of the slingshot (comes before draw bodies... order matters so that things are layered right)
     game.context.drawImage(game.slingshotImage, game.slingshotX - game.offsetLeft, game.slingshotY);
+
+    // Draw bodies
+    game.drawAllBodies();
+
+    // Draw the front of the slingshot (comes after draw bodies... order matters so that things are layered right)
     game.context.drawImage(game.slingshotFrontImage, game.slingshotX - game.offsetLeft, game.slingshotY);
 
     if (!game.ended) {
       game.animationFrame = window.requestAnimationFrame(game.animate, game.canvas);
     }
-
+  },
+  drawAllBodies: function(){
+    box2d.world.DrawDebugData();
+    //TODO: Iterate through all of the bodies and draw them on the canvas.
   }
+
 }
 
 var levels = {
@@ -367,7 +378,10 @@ var levels = {
       $('#levelselectscreen').hide();
     });
   },
+
+  // Load data and images for a selected level
   load: function (number) {
+    box2d.init();
     game.currentLevel = {
       number: number,
       hero: []
@@ -379,6 +393,12 @@ var levels = {
     game.currentLevel.foregroundImage = loader.loadImage('images/backgrounds/' + level.foreground + '.png')
     game.slingshotImage = loader.loadImage('images/slingshot.png')
     game.slingshotFrontImage = loader.loadImage('images/slingshot-front.png')
+
+    // load the entities
+    for (var i = 0; i < level.entities.length; i++) {
+      var entity = level.entities[i];
+      entities.create(entity);
+    };
 
     // Start the game immedately if everything is loaded. Otherwise, call loaders and set the gamestart to loader.loaded
     if (loader.loaded) {
@@ -606,12 +626,21 @@ var entities = {
   draw: function (entity, position, angle) { }
 }
 
-var Box2d = {
+var box2d = {
   scale: 30,
   init: function () {
     var gravity = new b2Vec2(0, 9.8);
     var allowSleep = true;
     box2d.world = new b2World(gravity, allowSleep);
+    // Setup Debug draw
+    var debugContext = document.getElementById('debugcanvas').getContext('2d');
+    var debugDraw = new b2DebugDraw();
+    debugDraw.SetSprite(debugContext);
+    debugDraw.SetDrawScale(box2d.scale);
+    debugDraw.SetFillAlpha(0.3);
+    debugDraw.SetLineThickness(1.0);
+    debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
+    box2d.world.SetDebugDraw(debugDraw);
   },
   createRectange(entity, definition) {
     var bodyDef = new b2BodyDef;
@@ -654,7 +683,7 @@ var Box2d = {
     fixtureDef.density = definition.density;
     fixtureDef.friction = definition.friction;
     fixtureDef.restitution = definition.restitution;
-    fixtureDef.shape = new b2CircleShape(entity.radius / Box2d.scale);
+    fixtureDef.shape = new b2CircleShape(entity.radius / box2d.scale);
     var body = box2d.world.CreateBody(bodyDef);
     body.SetUserData(entity);
     body.CreateFixture(fixtureDef);

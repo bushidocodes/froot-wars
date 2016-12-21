@@ -134,9 +134,17 @@ var game = {
       game.animationFrame = window.requestAnimationFrame(game.animate, game.canvas);
     }
   },
-  drawAllBodies: function(){
+  drawAllBodies: function () {
     box2d.world.DrawDebugData();
-    //TODO: Iterate through all of the bodies and draw them on the canvas.
+
+    //Iterate through all of the bodies and draw them on the canvas.
+    //strange loop that uses Box2D's GetBodyList and GetNext() methods
+    for (var body = box2d.world.GetBodyList(); body; body = body.GetNext()) {
+      var entity = body.GetUserData();
+      if (entity) {
+        entities.draw(entity, body.GetPosition(), body.GetAngle());
+      }
+    }
   }
 
 }
@@ -326,7 +334,7 @@ var levels = {
           type: 'villain',
           name: 'burger',
           x: 715,
-          y: 160,
+          y: 140,
           calories: 590
         },
         {
@@ -546,7 +554,7 @@ var entities = {
     sodacan: {
       shape: 'rectangle',
       fullHealth: 80,
-      width: 80,
+      width: 40,
       height: 60,
       density: 1,
       friction: 0.5,
@@ -623,7 +631,60 @@ var entities = {
     }
   },
   // Draw the entity on the canvas
-  draw: function (entity, position, angle) { }
+  // The images are stretched to cover the 1px skin that Box2D adds to all entities
+  draw: function (entity, position, angle) {
+    game.context.translate(position.x * box2d.scale - game.offsetLeft, position.y * box2d.scale);
+    game.context.rotate(angle);
+    switch (entity.type) {
+      case 'block':
+        game.context.drawImage(
+          entity.sprite,
+          0,
+          0,
+          entity.sprite.width,
+          entity.sprite.height,
+          -entity.width / 2 - 1,
+          -entity.height / 2 - 1,
+          entity.width + 2,
+          entity.height + 2
+        );
+        break;
+      case 'villain':
+      case 'hero':
+        if (entity.shape === 'circle') {
+          game.context.drawImage(
+            entity.sprite,
+            0,
+            0,
+            entity.sprite.width,
+            entity.sprite.height,
+            -entity.radius - 1,
+            -entity.radius - 1,
+            entity.radius * 2 + 2,
+            entity.radius * 2 + 2
+          );
+        }
+        else if (entity.shape === 'rectangle') {
+          game.context.drawImage(
+            entity.sprite,
+            0,
+            0,
+            entity.sprite.width,
+            entity.sprite.height,
+            -entity.width / 2 - 1,
+            -entity.height / 2 - 1,
+            entity.width + 2,
+            entity.height + 2
+          );
+        }
+        break;
+      case 'ground':
+        // ground is an invisible entity
+        break;
+    }
+    game.context.rotate(-angle);
+    game.context.translate(-position.x * box2d.scale + game.offsetLeft, -position.y * box2d.scale);
+  }
 }
 
 var box2d = {

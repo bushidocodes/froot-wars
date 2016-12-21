@@ -174,10 +174,19 @@ var game = {
       var heroX = game.currentHero.GetPosition().x * box2d.scale;
       game.panTo(heroX);
       // And when the hero falls asleep or leaves the gameboard, delete him and load the next hero
-      if (!game.currentHero.IsAwake() || heroX < 0 || heroX > game.currentLevel.foregroundImage.width ) {
+      if (!game.currentHero.IsAwake() || heroX < 0 || heroX > game.currentLevel.foregroundImage.width) {
         box2d.world.DestroyBody(game.currentHero);
         game.currentHero = undefined;
         game.mode = 'load-next-hero';
+      }
+    }
+    // Be sure to pan back to the left before ending the game
+    if (game.mode === 'level-success' || game.mode === 'level-failure') {
+      console.log("end of game detected... panning");
+      if (game.panTo(0)) {
+        console.log('panning complete');
+        game.ended = true;
+        game.showEndingScreen();
       }
     }
   },
@@ -225,6 +234,33 @@ var game = {
         entities.draw(entity, body.GetPosition(), body.GetAngle());
       }
     }
+  },
+  showEndingScreen: function () {
+    console.log("showing ending screen");
+    if (game.mode === 'level-success') {
+      if (game.currentLevel.number < levels.data.length - 1) {
+        $('#endingmessage').html('Level Complete. Well Done!!!');
+        $('#playnextlevel').show();
+      } else {
+        $('#endingmessage').html('All Levels Complete. Well Done!');
+        $('#playnextlevel').hide();
+      }
+    } else if (game.mode === 'level-failure') {
+      $('#endingmessage').html('Failed. Play Again?');
+      $('#playnextlevel').hide();
+    }
+
+    $('#endingscreen').show();
+  },
+  restartLevel: function () {
+    window.cancelAnimationFrame(game.animationFrame);
+    game.lastUpdateTime = undefined;
+    levels.load(game.currentLevel.number);
+  },
+  restartLevel: function () {
+    window.cancelAnimationFrame(game.animationFrame);
+    game.lastUpdateTime = undefined;
+    levels.load(game.currentLevel.number + 1);
   }
 
 }

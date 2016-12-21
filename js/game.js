@@ -356,9 +356,65 @@ var entities = {
     }
   },
   // Turn an entity definition into a Box2D object and add to game world
-  create: function(entity){},
+  create: function (entity) { },
   // Draw the entity on the canvas
-  draw: function(entity, position, angle){},
+  draw: function (entity, position, angle) { }
+}
+
+var Box2d = {
+  scale: 30,
+  init: function () {
+    var gravity = new b2Vec2(0, 9.8);
+    var allowSleep = true;
+    box2d.world = new b2World(gravity, allowSleep);
+  },
+  createRectange(entity, definition) {
+    var bodyDef = new b2BodyDef;
+    if (entity.static) {
+      bodyDef.type = b2Body.b2_staticBody;
+    } else {
+      bodyDef.type = b2Body.b2_dynamicBody;
+    }
+    bodyDef.position.x = entity.x / box2d.scale;
+    bodyDef.position.y = entity.y / box2d.scale;
+    if (entity.angle) {
+      bodyDef.angle = Math.PI * entity.angle / 180;
+    }
+    var fixtureDef = new b2FixtureDef;
+    fixtureDef.density = definition.density;
+    fixtureDef.friction = definition.friction;
+    fixtureDef.restitution = definition.restitution;
+    fixtureDef.shape = new b2PolygonShape;
+    fixtureDef.shape.SetAsBox(entity.width / 2 / box2d.scale, entity.height / 2 / box2d.scale);
+    var body = box2d.world.CreateBody(bodyDef);
+    body.SetUserData(entity);
+    body.CreateFixture(fixtureDef);
+    return body;
+  },
+  createCircle(entity, definition) {
+    var bodyDef = new b2BodyDef;
+    if (entity.isStatic) {
+      bodyDef.type = b2Body.b2_staticBody;
+    } else {
+      bodyDef.type = b2Body.b2_staticBody;
+    }
+
+    bodyDef.position.x = entity.x / box2d.scale;
+    bodyDef.position.y = entity.y / box2d.scale;
+
+    if (entity.angle) {
+      bodyDef.angle = Math.PI * entity.angle / 180;
+    }
+    var fixtureDef = new b2FixtureDef;
+    fixtureDef.density = definition.density;
+    fixtureDef.friction = definition.friction;
+    fixtureDef.restitution = definition.restitution;
+    fixtureDef.shape = new b2CircleShape(entity.radius / Box2d.scale);
+    var body = box2d.world.CreateBody(bodyDef);
+    body.SetUserData(entity);
+    body.CreateFixture(fixtureDef);
+    return body;
+  }
 
 
 }

@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "box2dweb": "^2.1.0-b",
     "jquery": "^3.1.1"
   }
 }

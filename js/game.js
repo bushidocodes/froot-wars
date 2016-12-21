@@ -1,3 +1,14 @@
+// Ghetto Import Box2D
+const b2Vec2 = Box2D.Common.Math.b2Vec2;
+const b2BodyDef = Box2D.Dynamics.b2BodyDef;
+const b2Body = Box2D.Dynamics.b2Body;
+const b2FixtureDef = Box2D.Dynamics.b2FixtureDef;
+const b2Fixture = Box2D.Dynamics.b2Fixture;
+const b2World = Box2D.Dynamics.b2World;
+const b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape;
+const b2CircleShape = Box2D.Collision.Shapes.b2CircleShape;
+const b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
+const b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef;
 
 var game = {
   mode: 'intro',
@@ -276,3 +287,78 @@ var mouse = {
 $(window).on('load', function () {
   game.init();
 });
+
+var entities = {
+  definitions: {
+    glass: {
+      fullHealth: 100,
+      density: 2.4,
+      friction: 0.4,
+      restitution: 0.15
+    },
+    wood: {
+      fullHealth: 500,
+      density: 0.7,
+      friction: 0.4,
+      restitution: 0.4
+    },
+    dirt: {
+      density: 3.0,
+      friction: 1.5,
+      restitution: 0.2
+    },
+    burger: {
+      shape: 'circle',
+      fullHealth: 40,
+      radius: 25,
+      density: 1,
+      friction: 0.5,
+      restitution: 0.4
+    },
+    sodacan: {
+      shape: 'rectangle',
+      fullHealth: 80,
+      width: 80,
+      height: 60,
+      density: 1,
+      friction: 0.5,
+      restitution: 0.7
+    },
+    fries: {
+      shape: 'rectangle',
+      fullHealth: 50,
+      width: 40,
+      height: 50,
+      density: 1,
+      friction: 0.5,
+      restitution: 0.6
+    },
+    apple: {
+      shape: 'circle',
+      radius: 25,
+      density: 1.5,
+      friction: 0.5,
+      restitution: 0.4
+    },
+    orange: {
+      shape: 'circle',
+      radius: 25,
+      density: 1.5,
+      friction: 0.5,
+      restitution: 0.4
+    },
+    strawberry: {
+      shape: 'circle',
+      radius: 15,
+      density: 2.0,
+      friction: 0.5,
+      restitution: 0.4
+    }
+  },
+  // Turn an entity definition into a Box2D object and add to game world
+  create: function(entity){},
+  // Draw the entity on the canvas
+  draw: function(entity, position, angle){},
+
+
+}

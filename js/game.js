@@ -39,6 +39,17 @@ var game = {
     loader.init();
     mouse.init();
 
+    // Load sound effects and music
+    // kindergarten by gurdonark is licensed under Creative Commons
+    game.backgroundMusic = loader.loadSound('audio/gurdonark-kindergarten');
+    game.slingshotReleasedSound = loader.loadSound('audio/bounce');
+    game.breakSound = {
+      'glass': loader.loadSound('audio/glassbreak'),
+      'wood': loader.loadSound('audio/woodbreak')
+    };
+
+
+
     // Hide the game and show the start screen
     $('.gamelayer').hide();
     $('#gamestartscreen').show();
@@ -56,6 +67,8 @@ var game = {
     $('.gamelayer').hide();
     $('#gamecanvas').show();
     $('#scorescreen').show();
+
+    game.startBackgroundMusic();
     game.mode = 'intro';
     game.offsetLeft = 0; // offset value for how far our screen has panned right
     game.ended = false;
@@ -168,6 +181,7 @@ var game = {
         game.currentHero.SetPosition({ x: (mouse.x + game.offsetLeft) / box2d.scale, y: mouse.y / box2d.scale });
       } else {
         game.mode = 'fired';
+        game.slingshotReleasedSound.play();
         var impulseScaleFactor = 0.75;
         var impulse = new b2Vec2(
           (game.slingshotX + 35 - mouse.x - game.offsetLeft) * impulseScaleFactor,
@@ -186,7 +200,7 @@ var game = {
       // And when the hero falls asleep or leaves the gameboard, delete him and load the next hero
       var elapsedTime = (new Date().getTime() - game.fireTimer) / 1000;
       console.log("Time: ", elapsedTime);
-      if (!game.currentHero.IsAwake() || heroX < 0 || heroX > game.currentLevel.foregroundImage.width || elapsedTime > 15) {
+      if (!game.currentHero.IsAwake() || heroX < 0 || heroX > game.currentLevel.foregroundImage.width || elapsedTime > 10) {
         game.fireTimer = 0;
         box2d.world.DestroyBody(game.currentHero);
         game.currentHero = undefined;
@@ -257,6 +271,7 @@ var game = {
             game.score += entity.calories;
             $('#score').html('Score: ' + game.score);
           }
+          if (entity.breakSound) entity.breakSound.play();
         } else {
           entities.draw(entity, body.GetPosition(), body.GetAngle());
         }
@@ -265,6 +280,7 @@ var game = {
   },
   showEndingScreen: function () {
     console.log("showing ending screen");
+    game.stopBackgroundMusic();
     if (game.mode === 'level-success') {
       if (game.currentLevel.number < levels.data.length - 1) {
         $('#endingmessage').html('Level Complete. Well Done!!!');
@@ -317,10 +333,30 @@ var game = {
     game.context.lineTo(game.slingshotX - game.offsetLeft + 10, game.slingshotY + 30);
     game.context.stroke();
 
-
-
     game.context.moveTo(game.slingshotX + 50 - game.offsetLeft, game.slingshotY + 25);
 
+  },
+
+  startBackgroundMusic: function () {
+    var toggleImage = $('#togglemusic')[0];
+    game.backgroundMusic.play();
+    toggleImage.src = 'images/icons/sound.png';
+  },
+  stopBackgroundMusic: function () {
+    var toggleImage = $('#togglemusic')[0];
+    toggleImage.src = 'images/icons/nosound.png';
+    game.backgroundMusic.pause();
+    game.backgroundMusic.currentTime = 0; // make sure to start at beginning of song
+  },
+  toggleBackgroundMusic: function () {
+    var toggleImage = $('#togglemusic')[0];
+    if (game.backgroundMusic.paused) {
+      game.backgroundMusic.play();
+      toggleImage.src = 'images/icons/sounds.png';
+    } else {
+      game.backgroundMusic.pause();
+      toggleImage.src = 'images/icons/nosound.png';
+    }
   }
 
 }
@@ -781,6 +817,7 @@ var entities = {
         entity.fullHealth = definition.fullHealth;
         entity.shape = 'rectangle'
         entity.sprite = loader.loadImage('images/entities/' + entity.name + '.png');
+        entity.breakSound = game.breakSound[entity.name];
         box2d.createRectange(entity, definition);
         break;
       case "ground":
@@ -794,6 +831,7 @@ var entities = {
         entity.fullHealth = definition.fullHealth;
         entity.shape = definition.shape;
         entity.sprite = loader.loadImage('images/entities/' + entity.name + '.png');
+        entity.bounceSound = game.bounceSound;
         if (definition.shape === 'circle') {
           entity.radius = definition.radius;
           box2d.createCircle(entity, definition);
@@ -914,6 +952,9 @@ var box2d = {
         if (entity2.health) {
           entity2.health -= impulseAlongNormal;
         }
+        // Play bounce sounds
+        if (entity1.bounceSound) entity1.bounceSound.play();
+        if (entity2.bounceSound) entity2.bounceSound.play();
       }
     };
     box2d.world.SetContactListener(listener);

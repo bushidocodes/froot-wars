@@ -59,6 +59,7 @@ var game = {
     game.mode = 'intro';
     game.offsetLeft = 0; // offset value for how far our screen has panned right
     game.ended = false;
+    game.hero = undefined;
     game.animationFrame = window.requestAnimationFrame(game.animate, game.canvas);
   },
 
@@ -281,6 +282,7 @@ var game = {
   },
   restartLevel: function () {
     window.cancelAnimationFrame(game.animationFrame);
+    game.currentHero = undefined;
     game.lastUpdateTime = undefined;
     levels.load(game.currentLevel.number);
   },

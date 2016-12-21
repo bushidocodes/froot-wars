@@ -83,7 +83,35 @@ var game = {
     return false;
   },
 
+  countHeroesAndVillains: function () {
+    game.heroes = [];
+    game.villains = [];
+    for (var body = box2d.world.GetBodyList(); body; body = body.GetNext()) {
+      var entity = body.GetUserData();
+      if (entity) {
+        if (entity.type === 'hero') {
+          game.heroes.push(body);
+        } else if (entity.type === 'villain') {
+          game.villains.push(body);
+        }
+      }
+    }
+  },
+
+  // if the distance between the mouse pointer and the center of the hero is smaller than the radius, the mouse is hovering on the hero
+  // This solution only works for circular shaped heroes
+  mouseOnCurrentHero: function () {
+    if (!game.currentHero) {
+      return false;
+    }
+    var position = game.currentHero.GetPosition();
+    var distanceSquared = Math.pow(position.x * box2d.scale - mouse.x - game.offsetLeft, 2) + Math.pow(position.y * box2d.scale - mouse.y, 2);
+    var radiusSquared = Math.pow(game.currentHero.GetUserData().radius, 2);
+    return (distanceSquared <= radiusSquared);
+  },
+
   handlePanning: function () {
+    console.log("Game mode is ", game.mode);
     if (game.mode === 'intro') { //why coerce?
       if (game.panTo(700)) {
         game.mode = 'load-next-hero';
@@ -91,22 +119,66 @@ var game = {
     }
 
     if (game.mode === 'load-next-hero') {
-      //TODO: Implement checking if out of heroes or if all villains are destroyed
-      //load hero and set mode to wait-for-firing
-      game.mode = 'wait-for-firing';
+      game.countHeroesAndVillains();
+      if (game.villains.length === 0) {
+        game.mode = 'level-success';
+        return;
+      }
+      if (game.heroes.length === 0) {
+        game.mode = 'level-failure';
+        return;
+      }
+      if (!game.currentHero) {
+        game.currentHero = game.heroes[game.heroes.length - 1];
+        game.currentHero.SetPosition({ x: 180 / box2d.scale, y: 200 / box2d.scale });
+        game.currentHero.SetLinearVelocity({ x: 0, y: 0 });
+        game.currentHero.SetAngularVelocity(0);
+        game.currentHero.SetAwake(true);
+      } else {
+        game.panTo(game.slingshotX);
+        if (!game.currentHero.IsAwake()) {
+          game.mode = 'wait-for-firing';
+        }
+      }
     }
 
     if (game.mode === 'wait-for-firing') {
       if (mouse.dragging) { // pan right when player drags mouse right
-        game.panTo(mouse.x + game.offsetLeft);
+        if (game.mouseOnCurrentHero()) {
+          game.mode = 'firing';
+        } else {
+          game.panTo(mouse.x + game.offsetLeft);
+        }
       } else { // auto pan back to slingshot when player is not dragging mouse to pan right
         game.panTo(game.slingshotX);
       }
     }
 
-
     if (game.mode === 'firing') {
-      //TODO Pan to hero to follow them in-flight
+      if (mouse.down) {
+        game.panTo(game.slingshotX);
+        game.currentHero.SetPosition({ x: (mouse.x + game.offsetLeft) / box2d.scale, y: mouse.y / box2d.scale });
+      } else {
+        game.mode = 'fired';
+        var impulseScaleFactor = 0.75;
+        var impulse = new b2Vec2(
+          (game.slingshotX + 35 - mouse.x - game.offsetLeft) * impulseScaleFactor,
+          (game.slingshotY + 25 - mouse.y) * impulseScaleFactor
+        );
+        game.currentHero.ApplyImpulse(impulse, game.currentHero.GetWorldCenter());
+      }
+    }
+
+    if (game.mode === 'fired') {
+      // Pan to where hero is
+      var heroX = game.currentHero.GetPosition().x * box2d.scale;
+      game.panTo(heroX);
+      // And when the hero falls asleep or leaves the gameboard, delete him and load the next hero
+      if (!game.currentHero.IsAwake() || heroX < 0 || heroX > game.currentLevel.foregroundImage.width ) {
+        box2d.world.DestroyBody(game.currentHero);
+        game.currentHero = undefined;
+        game.mode = 'load-next-hero';
+      }
     }
   },
 
@@ -114,7 +186,15 @@ var game = {
     // Animate the background
     game.handlePanning();
 
-    // TODO: Draw the characters
+    // Animate the characters using a variable step rate derived from the framerate of requestAnimationFrame
+    var currentTime = new Date().getTime();
+    var timeStep;
+    if (game.lastUpdateTime) {
+      timeStep = (currentTime - game.lastUpdateTime) / 1000;
+      box2d.step(timeStep);
+    }
+
+    game.lastUpdateTime = currentTime;
 
     // Draw the background with parallax
     // TODO: Use constants to be able to adjust size of gameboard.
@@ -540,7 +620,7 @@ var entities = {
     },
     dirt: {
       density: 3.0,
-      friction: 1.5,
+      friction: 1.9,
       restitution: 0.2
     },
     burger: {
@@ -689,6 +769,8 @@ var entities = {
 
 var box2d = {
   scale: 30,
+  velocityIterations: 8,
+  positionIterations: 3,
   init: function () {
     var gravity = new b2Vec2(0, 9.8);
     var allowSleep = true;
@@ -705,7 +787,7 @@ var box2d = {
   },
   createRectange(entity, definition) {
     var bodyDef = new b2BodyDef;
-    if (entity.static) {
+    if (entity.isStatic) {
       bodyDef.type = b2Body.b2_staticBody;
     } else {
       bodyDef.type = b2Body.b2_dynamicBody;
@@ -731,7 +813,7 @@ var box2d = {
     if (entity.isStatic) {
       bodyDef.type = b2Body.b2_staticBody;
     } else {
-      bodyDef.type = b2Body.b2_staticBody;
+      bodyDef.type = b2Body.b2_dynamicBody;
     }
 
     bodyDef.position.x = entity.x / box2d.scale;
@@ -749,7 +831,9 @@ var box2d = {
     body.SetUserData(entity);
     body.CreateFixture(fixtureDef);
     return body;
+  },
+  step: function (timeStep) {
+    var timeStep = (timeStep <= 2 / 60) ? timeStep : 2 / 60;
+    box2d.world.Step(timeStep, box2d.velocityIterations, box2d.positionIterations);
   }
-
-
 }

@@ -1003,7 +1003,8 @@ class Box2d {
       }
     };
     this.world.SetContactListener(listener);
-  },
+  }
+
   createRectangle(entity, definition) {
     const bodyDef = new b2BodyDef();
     if (entity.isStatic) {
@@ -1026,7 +1027,8 @@ class Box2d {
     body.SetUserData(entity);
     const fixture = body.CreateFixture(fixtureDef);
     return body;
-  },
+  }
+
   createCircle(entity, definition) {
     debugLog('Creating Circle with ', entity, definition);
     const bodyDef = new b2BodyDef();
@@ -1053,7 +1055,8 @@ class Box2d {
     const fixture = body.CreateFixture(fixtureDef);
     debugLog("Final Circle body is now ", body);
     return body;
-  },
+  }
+
   step(timeStep) {
     timeStep = (timeStep <= 2 / 60) ? timeStep : 2 / 60;
     this.world.Step(timeStep, this.velocityIterations, this.positionIterations);

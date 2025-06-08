@@ -18,17 +18,17 @@ const debugLog = (...args) => { if (DEBUG) console.log(...args); };
 const BOARD_WIDTH = 640;
 const BOARD_HEIGHT = 480;
 
-$(document).ready(() => {
+document.addEventListener('DOMContentLoaded', () => {
   debugLog('init');
   game.init();
 
   // Attach UI event handlers
-  $('#togglemusic').on('click', game.toggleBackgroundMusic);
-  $('#restartlevel').on('click', game.restartLevel);
-  $('#startGameButton').on('click', game.showLevelScreen);
-  $('#playcurrentlevel').on('click', game.restartLevel);
-  $('#playnextlevel').on('click', game.startNextLevel);
-  $('#showLevelScreen').on('click', game.showLevelScreen);
+  document.getElementById('togglemusic').addEventListener('click', game.toggleBackgroundMusic);
+  document.getElementById('restartlevel').addEventListener('click', game.restartLevel);
+  document.getElementById('startGameButton').addEventListener('click', game.showLevelScreen);
+  document.getElementById('playcurrentlevel').addEventListener('click', game.restartLevel);
+  document.getElementById('playnextlevel').addEventListener('click', game.startNextLevel);
+  document.getElementById('showLevelScreen').addEventListener('click', game.showLevelScreen);
 });
 
 const game = {
@@ -67,22 +67,28 @@ const game = {
 
 
     // Hide the game and show the start screen
-    $('.gamelayer').hide();
-    $('#gamestartscreen').show();
+    document.querySelectorAll('.gamelayer').forEach(el => {
+      el.style.display = 'none';
+    });
+    document.getElementById('gamestartscreen').style.display = 'block';
 
     // Save canvas and context to game object
-    game.canvas = $('#gamecanvas')[0];
+    game.canvas = document.getElementById('gamecanvas');
     game.context = game.canvas.getContext('2d');
   },
   showLevelScreen() {
-    $('.gamelayer').hide();
-    $('#levelselectscreen').show('slow');
+    document.querySelectorAll('.gamelayer').forEach(el => {
+      el.style.display = 'none';
+    });
+    document.getElementById('levelselectscreen').style.display = 'block';
   },
 
   start() {
-    $('.gamelayer').hide();
-    $('#gamecanvas').show();
-    $('#scorescreen').show();
+    document.querySelectorAll('.gamelayer').forEach(el => {
+      el.style.display = 'none';
+    });
+    document.getElementById('gamecanvas').style.display = 'block';
+    document.getElementById('scorescreen').style.display = 'block';
 
     game.startBackgroundMusic();
     game.mode = 'intro';
@@ -304,7 +310,7 @@ const game = {
           box2d.world.DestroyBody(body);
           if (entity.type === 'villain') {
             game.score += entity.calories;
-            $('#score').html('Score: ' + game.score);
+            document.getElementById('score').innerHTML = 'Score: ' + game.score;
           }
           if (entity.breakSound) entity.breakSound.play();
         } else {
@@ -318,18 +324,18 @@ const game = {
     game.stopBackgroundMusic();
     if (game.mode === 'level-success') {
       if (game.currentLevel.number < levels.data.length - 1) {
-        $('#endingmessage').html('Level Complete. Well Done!!!');
-        $('#playnextlevel').show();
+        document.getElementById('endingmessage').innerHTML = 'Level Complete. Well Done!!!';
+        document.getElementById('playnextlevel').style.display = 'block';
       } else {
-        $('#endingmessage').html('All Levels Complete. Well Done!');
-        $('#playnextlevel').hide();
+        document.getElementById('endingmessage').innerHTML = 'All Levels Complete. Well Done!';
+        document.getElementById('playnextlevel').style.display = 'none';
       }
     } else if (game.mode === 'level-failure') {
-      $('#endingmessage').html('Failed. Play Again?');
-      $('#playnextlevel').hide();
+      document.getElementById('endingmessage').innerHTML = 'Failed. Play Again?';
+      document.getElementById('playnextlevel').style.display = 'none';
     }
 
-    $('#endingscreen').show();
+    document.getElementById('endingscreen').style.display = 'block';
   },
   restartLevel() {
     window.cancelAnimationFrame(game.animationFrame);
@@ -373,18 +379,18 @@ const game = {
   },
 
   startBackgroundMusic() {
-    const toggleImage = $('#togglemusic')[0];
+    const toggleImage = document.getElementById('togglemusic');
     game.backgroundMusic.play();
     toggleImage.src = 'images/icons/sound.png';
   },
   stopBackgroundMusic() {
-    const toggleImage = $('#togglemusic')[0];
+    const toggleImage = document.getElementById('togglemusic');
     toggleImage.src = 'images/icons/nosound.png';
     game.backgroundMusic.pause();
     game.backgroundMusic.currentTime = 0; // make sure to start at beginning of song
   },
   toggleBackgroundMusic() {
-    const toggleImage = $('#togglemusic')[0];
+    const toggleImage = document.getElementById('togglemusic');
     if (game.backgroundMusic.paused) {
       game.backgroundMusic.play();
       toggleImage.src = 'images/icons/sounds.png';
@@ -626,11 +632,13 @@ const levels = {
     levels.data.forEach((level, index) => {
       html += `<input type='button' value=${index + 1}>`
     })
-    $('#levelselectscreen').html(html);
-    //Add click handlers to all level buttons
-    $('#levelselectscreen input').click(function () {
-      levels.load(this.value - 1);
-      $('#levelselectscreen').hide();
+    const levelScreen = document.getElementById('levelselectscreen');
+    levelScreen.innerHTML = html;
+    levelScreen.querySelectorAll('input').forEach(input => {
+      input.addEventListener('click', function () {
+        levels.load(this.value - 1);
+        levelScreen.style.display = 'none';
+      });
     });
   },
 
@@ -643,7 +651,7 @@ const levels = {
       hero: []
     };
     game.score = 0;
-    $('#score').html('Score: ' + game.score);
+    document.getElementById('score').innerHTML = 'Score: ' + game.score;
     const level = levels.data[number];
     game.currentLevel.backgroundImage = loader.loadImage('images/backgrounds/' + level.background + '.png')
     game.currentLevel.foregroundImage = loader.loadImage('images/backgrounds/' + level.foreground + '.png')
@@ -694,7 +702,7 @@ const loader = {
   loadImage(url) {
     this.totalCount++;
     this.loaded = false;
-    $('#loadingscreen').show();
+    document.getElementById('loadingscreen').style.display = 'block';
     const image = new Image();
     image.src = url;
     image.onload = loader.itemLoaded;
@@ -704,7 +712,7 @@ const loader = {
   loadSound(url) {
     this.totalCount++;
     this.loaded = false;
-    $('#loadingscreen').show();
+    document.getElementById('loadingscreen').style.display = 'block';
     const audio = new Audio();
     audio.src = url + loader.soundFileExtn;
     audio.addEventListener('canplaythrough', loader.itemLoaded, false);
@@ -717,11 +725,11 @@ const loader = {
   //   and triggers loader.onload(), which starts the game.
   itemLoaded() {
     loader.loadedCount++;
-    $('#loadingmessage').html('loaded ' + loader.loadedCount + ' of ' + loader.totalCount);
+    document.getElementById('loadingmessage').innerHTML = 'loaded ' + loader.loadedCount + ' of ' + loader.totalCount;
     if (loader.loadedCount === loader.totalCount) {
       //Done loading
       loader.loaded = true;
-      $('#loadingscreen').hide();
+      document.getElementById('loadingscreen').style.display = 'none';
       if (loader.onload) {
         loader.onload();
         loader.onload = undefined;
@@ -735,20 +743,19 @@ const mouse = {
   y: 0,
   down: false,
   init() {
-    // Register jQuery Mouse Events with our mouse event handlers
-    // https://api.jquery.com/category/events/mouse-events/
-    $('#gamecanvas').mousemove(mouse.mousemovehandler);
-    $('#gamecanvas').mousedown(mouse.mousedownhandler);
-    $('#gamecanvas').mouseup(mouse.mouseuphandler);
-    $('#gamecanvas').mouseout(mouse.mouseuphandler);
+    // Register mouse events with our mouse event handlers
+    const canvas = document.getElementById('gamecanvas');
+    canvas.addEventListener('mousemove', mouse.mousemovehandler);
+    canvas.addEventListener('mousedown', mouse.mousedownhandler);
+    canvas.addEventListener('mouseup', mouse.mouseuphandler);
+    canvas.addEventListener('mouseout', mouse.mouseuphandler);
   },
   // Handles general mouse movement on the canvas
   mousemovehandler(ev) {
-    // Use jQuery offset() to be able to relate window coordinates to canvas coordiates
-    // https://api.jquery.com/offset/
-    const offset = $('#gamecanvas').offset();
-    mouse.x = ev.pageX - offset.left;
-    mouse.y = ev.pageY - offset.top;
+    // Translate window coordinates to canvas coordinates
+    const rect = document.getElementById('gamecanvas').getBoundingClientRect();
+    mouse.x = ev.clientX - rect.left;
+    mouse.y = ev.clientY - rect.top;
     if (mouse.down) {
       mouse.dragging = true;
     }

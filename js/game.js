@@ -14,6 +14,10 @@ const b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef;
 const DEBUG = false;
 const debugLog = (...args) => { if (DEBUG) console.log(...args); };
 
+// Dimensions of the game board
+const BOARD_WIDTH = 640;
+const BOARD_HEIGHT = 480;
+
 $(document).ready(() => {
   debugLog('init');
   game.init();
@@ -237,9 +241,28 @@ const game = {
     game.lastUpdateTime = currentTime;
 
     // Draw the background with parallax
-    // TODO: Use constants to be able to adjust size of gameboard.
-    game.context.drawImage(game.currentLevel.backgroundImage, game.offsetLeft / 4, 0, 640, 480, 0, 0, 640, 480)
-    game.context.drawImage(game.currentLevel.foregroundImage, game.offsetLeft, 0, 640, 480, 0, 0, 640, 480);
+    game.context.drawImage(
+      game.currentLevel.backgroundImage,
+      game.offsetLeft / 4,
+      0,
+      BOARD_WIDTH,
+      BOARD_HEIGHT,
+      0,
+      0,
+      BOARD_WIDTH,
+      BOARD_HEIGHT
+    );
+    game.context.drawImage(
+      game.currentLevel.foregroundImage,
+      game.offsetLeft,
+      0,
+      BOARD_WIDTH,
+      BOARD_HEIGHT,
+      0,
+      0,
+      BOARD_WIDTH,
+      BOARD_HEIGHT
+    );
 
     // Draw the back of the slingshot (comes before draw bodies... order matters so that things are layered right)
     game.context.drawImage(game.slingshotImage, game.slingshotX - game.offsetLeft, game.slingshotY);

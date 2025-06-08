@@ -944,23 +944,27 @@ const entities = {
   }
 }
 
-const box2d = {
-  scale: 30,
-  velocityIterations: 8,
-  positionIterations: 3,
+class Box2d {
+  constructor() {
+    this.scale = 30;
+    this.velocityIterations = 8;
+    this.positionIterations = 3;
+    this.world = null;
+  }
+
   init() {
     const gravity = new b2Vec2(0, 9.8);
     const allowSleep = true;
-    box2d.world = new b2World(gravity, allowSleep);
+    this.world = new b2World(gravity, allowSleep);
     // Setup Debug draw
     const debugContext = document.getElementById('debugcanvas').getContext('2d');
     const debugDraw = new b2DebugDraw();
     debugDraw.SetSprite(debugContext);
-    debugDraw.SetDrawScale(box2d.scale);
+    debugDraw.SetDrawScale(this.scale);
     debugDraw.SetFillAlpha(0.3);
     debugDraw.SetLineThickness(1.0);
     debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
-    box2d.world.SetDebugDraw(debugDraw);
+    this.world.SetDebugDraw(debugDraw);
     // Add collision detection listeners
     const listener = new Box2D.Dynamics.b2ContactListener();
 
@@ -998,7 +1002,7 @@ const box2d = {
         if (entity2.bounceSound) entity2.bounceSound.play();
       }
     };
-    box2d.world.SetContactListener(listener);
+    this.world.SetContactListener(listener);
   },
   createRectangle(entity, definition) {
     const bodyDef = new b2BodyDef();
@@ -1007,8 +1011,8 @@ const box2d = {
     } else {
       bodyDef.type = b2Body.b2_dynamicBody;
     }
-    bodyDef.position.x = entity.x / box2d.scale;
-    bodyDef.position.y = entity.y / box2d.scale;
+    bodyDef.position.x = entity.x / this.scale;
+    bodyDef.position.y = entity.y / this.scale;
     if (entity.angle) {
       bodyDef.angle = Math.PI * entity.angle / 180;
     }
@@ -1017,8 +1021,8 @@ const box2d = {
     fixtureDef.friction = definition.friction;
     fixtureDef.restitution = definition.restitution;
     fixtureDef.shape = new b2PolygonShape;
-    fixtureDef.shape.SetAsBox(entity.width / 2 / box2d.scale, entity.height / 2 / box2d.scale);
-    const body = box2d.world.CreateBody(bodyDef);
+    fixtureDef.shape.SetAsBox(entity.width / 2 / this.scale, entity.height / 2 / this.scale);
+    const body = this.world.CreateBody(bodyDef);
     body.SetUserData(entity);
     const fixture = body.CreateFixture(fixtureDef);
     return body;
@@ -1032,8 +1036,8 @@ const box2d = {
       bodyDef.type = b2Body.b2_dynamicBody;
     }
 
-    bodyDef.position.x = entity.x / box2d.scale;
-    bodyDef.position.y = entity.y / box2d.scale;
+    bodyDef.position.x = entity.x / this.scale;
+    bodyDef.position.y = entity.y / this.scale;
 
     if (entity.angle) {
       bodyDef.angle = Math.PI * entity.angle / 180;
@@ -1042,9 +1046,9 @@ const box2d = {
     fixtureDef.density = definition.density;
     fixtureDef.friction = definition.friction;
     fixtureDef.restitution = definition.restitution;
-    fixtureDef.shape = new b2CircleShape(entity.radius / box2d.scale);
+    fixtureDef.shape = new b2CircleShape(entity.radius / this.scale);
     debugLog("Circle fixture is ", fixtureDef);
-    const body = box2d.world.CreateBody(bodyDef);
+    const body = this.world.CreateBody(bodyDef);
     body.SetUserData(entity);
     const fixture = body.CreateFixture(fixtureDef);
     debugLog("Final Circle body is now ", body);
@@ -1052,7 +1056,9 @@ const box2d = {
   },
   step(timeStep) {
     timeStep = (timeStep <= 2 / 60) ? timeStep : 2 / 60;
-    box2d.world.Step(timeStep, box2d.velocityIterations, box2d.positionIterations);
+    this.world.Step(timeStep, this.velocityIterations, this.positionIterations);
   }
 }
+
+const box2d = new Box2d();
 

@@ -17,6 +17,14 @@ const debugLog = (...args) => { if (DEBUG) console.log(...args); };
 $(document).ready(() => {
   debugLog('init');
   game.init();
+
+  // Attach UI event handlers
+  $('#togglemusic').on('click', game.toggleBackgroundMusic);
+  $('#restartlevel').on('click', game.restartLevel);
+  $('#startGameButton').on('click', game.showLevelScreen);
+  $('#playcurrentlevel').on('click', game.restartLevel);
+  $('#playnextlevel').on('click', game.startNextLevel);
+  $('#showLevelScreen').on('click', game.showLevelScreen);
 });
 
 const game = {

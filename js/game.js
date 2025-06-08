@@ -10,12 +10,12 @@ const b2CircleShape = Box2D.Collision.Shapes.b2CircleShape;
 const b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
 const b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef;
 
-$(function () {
-  console.log("init");
+$(document).ready(() => {
+  console.log('init');
   game.init();
 });
 
-var game = {
+const game = {
   mode: 'intro',
   // Coordinates of the slingshot
   slingshotX: 140,
@@ -33,7 +33,7 @@ var game = {
   // Fire Timer to prevent weird friction stuff from making game unplayable
   fireTimer: 0,
 
-  init: function () {
+  init() {
     //Initialize objects
     levels.init();
     loader.init();
@@ -58,12 +58,12 @@ var game = {
     game.canvas = $('#gamecanvas')[0];
     game.context = game.canvas.getContext('2d');
   },
-  showLevelScreen: function () {
+  showLevelScreen() {
     $('.gamelayer').hide();
     $('#levelselectscreen').show('slow');
   },
 
-  start: function () {
+  start() {
     $('.gamelayer').hide();
     $('#gamecanvas').show();
     $('#scorescreen').show();
@@ -77,7 +77,7 @@ var game = {
   },
 
   // Pan the screen to center on newCenter
-  panTo: function (newCenter) {
+  panTo(newCenter) {
     if ( // Check to see if the newCenter is within a quarter of the game screen in either direction and if the offset is within min and max bounds
       Math.abs(newCenter - game.offsetLeft - game.canvas.width / 4) > 0 //
       && game.offsetLeft <= game.maxOffset
@@ -85,7 +85,7 @@ var game = {
     ) {
       // Set deltaX to the mininum distance needed to get the newCenter within the center 50% of the screen.
       // Why divide by 2 though????
-      var deltaX = Math.round((newCenter - game.offsetLeft - game.canvas.width / 4) / 2);
+      let deltaX = Math.round((newCenter - game.offsetLeft - game.canvas.width / 4) / 2);
       // Here maxSpeed seems to speed up panning, now slow it down???
       if (deltaX && Math.abs(deltaX) > game.maxSpeed) {
         deltaX = game.maxSpeed * Math.abs(deltaX) / (deltaX);
@@ -104,11 +104,11 @@ var game = {
     return false;
   },
 
-  countHeroesAndVillains: function () {
+  countHeroesAndVillains() {
     game.heroes = [];
     game.villains = [];
-    for (var body = box2d.world.GetBodyList(); body; body = body.GetNext()) {
-      var entity = body.GetUserData();
+    for (let body = box2d.world.GetBodyList(); body; body = body.GetNext()) {
+      const entity = body.GetUserData();
       if (entity) {
         if (entity.type === 'hero') {
           game.heroes.push(body);
@@ -121,17 +121,17 @@ var game = {
 
   // if the distance between the mouse pointer and the center of the hero is smaller than the radius, the mouse is hovering on the hero
   // This solution only works for circular shaped heroes
-  mouseOnCurrentHero: function () {
+  mouseOnCurrentHero() {
     if (!game.currentHero) {
       return false;
     }
-    var position = game.currentHero.GetPosition();
-    var distanceSquared = Math.pow(position.x * box2d.scale - mouse.x - game.offsetLeft, 2) + Math.pow(position.y * box2d.scale - mouse.y, 2);
-    var radiusSquared = Math.pow(game.currentHero.GetUserData().radius, 2);
+    const position = game.currentHero.GetPosition();
+    const distanceSquared = Math.pow(position.x * box2d.scale - mouse.x - game.offsetLeft, 2) + Math.pow(position.y * box2d.scale - mouse.y, 2);
+    const radiusSquared = Math.pow(game.currentHero.GetUserData().radius, 2);
     return (distanceSquared <= radiusSquared);
   },
 
-  handlePanning: function () {
+  handlePanning() {
     console.log("Game mode is ", game.mode);
     if (game.mode === 'intro') { //why coerce?
       if (game.panTo(700)) {
@@ -182,8 +182,8 @@ var game = {
       } else {
         game.mode = 'fired';
         game.slingshotReleasedSound.play();
-        var impulseScaleFactor = 0.75;
-        var impulse = new b2Vec2(
+        const impulseScaleFactor = 0.75;
+        const impulse = new b2Vec2(
           (game.slingshotX + 35 - mouse.x - game.offsetLeft) * impulseScaleFactor,
           (game.slingshotY + 25 - mouse.y) * impulseScaleFactor
         );
@@ -194,11 +194,11 @@ var game = {
 
     if (game.mode === 'fired') {
       // Pan to where hero is
-      var heroX = game.currentHero.GetPosition().x * box2d.scale;
+      const heroX = game.currentHero.GetPosition().x * box2d.scale;
       //console.log("HERO :", game.currentHero);
       game.panTo(heroX);
       // And when the hero falls asleep or leaves the gameboard, delete him and load the next hero
-      var elapsedTime = (new Date().getTime() - game.fireTimer) / 1000;
+      const elapsedTime = (new Date().getTime() - game.fireTimer) / 1000;
       console.log("Time: ", elapsedTime);
       if (!game.currentHero.IsAwake() || heroX < 0 || heroX > game.currentLevel.foregroundImage.width || elapsedTime > 10) {
         game.fireTimer = 0;
@@ -218,13 +218,13 @@ var game = {
     }
   },
 
-  animate: function () {
+  animate() {
     // Animate the background
     game.handlePanning();
 
     // Animate the characters using a variable step rate derived from the framerate of requestAnimationFrame
-    var currentTime = new Date().getTime();
-    var timeStep;
+    const currentTime = new Date().getTime();
+    let timeStep;
     if (game.lastUpdateTime) {
       timeStep = (currentTime - game.lastUpdateTime) / 1000;
       box2d.step(timeStep);
@@ -255,16 +255,16 @@ var game = {
       game.animationFrame = window.requestAnimationFrame(game.animate, game.canvas);
     }
   },
-  drawAllBodies: function () {
+  drawAllBodies() {
     box2d.world.DrawDebugData();
 
     //Iterate through all of the bodies and draw them on the canvas.
     //strange loop that uses Box2D's GetBodyList and GetNext() methods
-    for (var body = box2d.world.GetBodyList(); body; body = body.GetNext()) {
-      var entity = body.GetUserData();
+    for (let body = box2d.world.GetBodyList(); body; body = body.GetNext()) {
+      const entity = body.GetUserData();
       // if (body.IsAwake()) console.log(body);
       if (entity) {
-        var entityX = body.GetPosition().x * box2d.scale;
+        const entityX = body.GetPosition().x * box2d.scale;
         if (entityX < 0 || entityX > game.currentLevel.foregroundImage.width || (entity.health && entity.health <= 0)) {
           box2d.world.DestroyBody(body);
           if (entity.type === 'villain') {
@@ -278,7 +278,7 @@ var game = {
       }
     }
   },
-  showEndingScreen: function () {
+  showEndingScreen() {
     console.log("showing ending screen");
     game.stopBackgroundMusic();
     if (game.mode === 'level-success') {
@@ -296,27 +296,27 @@ var game = {
 
     $('#endingscreen').show();
   },
-  restartLevel: function () {
+  restartLevel() {
     window.cancelAnimationFrame(game.animationFrame);
     game.currentHero = undefined;
     game.lastUpdateTime = undefined;
     levels.load(game.currentLevel.number);
   },
-  startNextLevel: function () {
+  startNextLevel() {
     window.cancelAnimationFrame(game.animationFrame);
     game.lastUpdateTime = undefined;
     levels.load(game.currentLevel.number + 1);
   },
-  drawSlingshotBand: function () {
+  drawSlingshotBand() {
     game.context.strokeStyle = 'rgb(68,31,11)';
     game.context.lineWidth = 6;
 
-    var radius = game.currentHero.GetUserData().radius;
-    var heroX = game.currentHero.GetPosition().x * box2d.scale;
-    var heroY = game.currentHero.GetPosition().y * box2d.scale;
-    var angle = Math.atan2(game.slingshotY + 25 - heroY, game.slingshotX + 50 - heroX);
-    var heroFarEdgeX = heroX - radius * Math.cos(angle);
-    var heroFarEdgeY = heroY - radius * Math.sin(angle);
+    const radius = game.currentHero.GetUserData().radius;
+    const heroX = game.currentHero.GetPosition().x * box2d.scale;
+    const heroY = game.currentHero.GetPosition().y * box2d.scale;
+    const angle = Math.atan2(game.slingshotY + 25 - heroY, game.slingshotX + 50 - heroX);
+    const heroFarEdgeX = heroX - radius * Math.cos(angle);
+    const heroFarEdgeY = heroY - radius * Math.sin(angle);
 
     game.context.beginPath();
     // Draw from rear top of slingshot
@@ -337,19 +337,19 @@ var game = {
 
   },
 
-  startBackgroundMusic: function () {
-    var toggleImage = $('#togglemusic')[0];
+  startBackgroundMusic() {
+    const toggleImage = $('#togglemusic')[0];
     game.backgroundMusic.play();
     toggleImage.src = 'images/icons/sound.png';
   },
-  stopBackgroundMusic: function () {
-    var toggleImage = $('#togglemusic')[0];
+  stopBackgroundMusic() {
+    const toggleImage = $('#togglemusic')[0];
     toggleImage.src = 'images/icons/nosound.png';
     game.backgroundMusic.pause();
     game.backgroundMusic.currentTime = 0; // make sure to start at beginning of song
   },
-  toggleBackgroundMusic: function () {
-    var toggleImage = $('#togglemusic')[0];
+  toggleBackgroundMusic() {
+    const toggleImage = $('#togglemusic')[0];
     if (game.backgroundMusic.paused) {
       game.backgroundMusic.play();
       toggleImage.src = 'images/icons/sounds.png';
@@ -361,7 +361,7 @@ var game = {
 
 }
 
-var levels = {
+const levels = {
   data: [
     // Level One
     {
@@ -584,8 +584,8 @@ var levels = {
       ]
     }
   ],
-  init: function () {
-    var html = '';
+  init() {
+    let html = '';
     // Dynamically create level buttons for all level objects in levels.data
     //seem like a silly use of forEach since we only use the index
     levels.data.forEach((level, index) => {
@@ -600,7 +600,7 @@ var levels = {
   },
 
   // Load data and images for a selected level
-  load: function (number) {
+  load(number) {
     console.log("load called for ", number);
     box2d.init();
     game.currentLevel = {
@@ -609,17 +609,16 @@ var levels = {
     };
     game.score = 0;
     $('#score').html('Score: ' + game.score);
-    var level = levels.data[number];
+    const level = levels.data[number];
     game.currentLevel.backgroundImage = loader.loadImage('images/backgrounds/' + level.background + '.png')
     game.currentLevel.foregroundImage = loader.loadImage('images/backgrounds/' + level.foreground + '.png')
     game.slingshotImage = loader.loadImage('images/slingshot.png')
     game.slingshotFrontImage = loader.loadImage('images/slingshot-front.png')
 
     // load the entities
-    for (var i = 0; i < level.entities.length; i++) {
-      var entity = level.entities[i];
+    for (const entity of level.entities) {
       entities.create(entity);
-    };
+    }
 
     // Start the game immedately if everything is loaded. Otherwise, call loaders and set the gamestart to loader.loaded
     if (loader.loaded) {
@@ -630,19 +629,19 @@ var levels = {
   }
 }
 
-var loader = {
+const loader = {
   // variables to track the status of loading game assets
   loaded: true,
   loadedCount: 0,
   totalCount: 0,
   soundFileExtn: '.ogg',
 
-  init: function () {
+  init() {
     // determine compatible game music for browser.
     // audio.canPlayType returns strings like 'maybe' or 'probably' to guess if audio will play
     // I suspect that mp3 now plays on all browsers????
-    var mp3Support, oggSupport;
-    var audio = document.createElement('audio');
+    let mp3Support, oggSupport;
+    const audio = document.createElement('audio');
     if (audio.canPlayType) {
       // Check to see if canPlayType returns truthy
       mp3Support = '' != audio.canPlayType('audio/mpeg');
@@ -657,21 +656,21 @@ var loader = {
     loader.soundFileExtn = oggSupport ? '.ogg' : mp3Support ? '.mp3' : undefined
   },
 
-  loadImage: function (url) {
+  loadImage(url) {
     this.totalCount++;
     this.loaded = false;
     $('#loadingscreen').show();
-    var image = new Image();
+    const image = new Image();
     image.src = url;
     image.onload = loader.itemLoaded;
     return image;
   },
 
-  loadSound: function (url) {
+  loadSound(url) {
     this.totalCount++;
     this.loaded = false;
     $('#loadingscreen').show();
-    var audio = new Audio();
+    const audio = new Audio();
     audio.src = url + loader.soundFileExtn;
     audio.addEventListener('canplaythrough', loader.itemLoaded, false);
     return audio;
@@ -681,7 +680,7 @@ var loader = {
   //   It iterates the loadedCount, adjusts the message on the loadingscreen, and checks
   //   for if all items have been loaded. When all have loaded, it hides the loading screen,
   //   and triggers loader.onload(), which starts the game.
-  itemLoaded: function () {
+  itemLoaded() {
     loader.loadedCount++;
     $('#loadingmessage').html('loaded ' + loader.loadedCount + ' of ' + loader.totalCount);
     if (loader.loadedCount === loader.totalCount) {
@@ -696,11 +695,11 @@ var loader = {
   }
 }
 
-var mouse = {
+const mouse = {
   x: 0,
   y: 0,
   down: false,
-  init: function () {
+  init() {
     // Register jQuery Mouse Events with our mouse event handlers
     // https://api.jquery.com/category/events/mouse-events/
     $('#gamecanvas').mousemove(mouse.mousemovehandler);
@@ -709,10 +708,10 @@ var mouse = {
     $('#gamecanvas').mouseout(mouse.mouseuphandler);
   },
   // Handles general mouse movement on the canvas
-  mousemovehandler: function (ev) {
+  mousemovehandler(ev) {
     // Use jQuery offset() to be able to relate window coordinates to canvas coordiates
     // https://api.jquery.com/offset/
-    var offset = $('#gamecanvas').offset();
+    const offset = $('#gamecanvas').offset();
     mouse.x = ev.pageX - offset.left;
     mouse.y = ev.pageY - offset.top;
     if (mouse.down) {
@@ -720,20 +719,20 @@ var mouse = {
     }
   },
   // Handles mouse clicks and drags
-  mousedownhandler: function (ev) {
+  mousedownhandler(ev) {
     mouse.down = true;
     mouse.downX = mouse.x;
     mouse.downY = mouse.y;
     ev.originalEvent.preventDefault();
   },
   // Makes sure that clicks and drags are cut off when the mouse cursor leaves the canvas
-  mouseuphandler: function (ev) {
+  mouseuphandler(ev) {
     mouse.down = false;
     mouse.dragging = false;
   }
 }
 
-var entities = {
+const entities = {
   definitions: {
     'glass': {
       fullHealth: 100,
@@ -804,8 +803,8 @@ var entities = {
     }
   },
   // Turn an entity definition into a Box2D object and add to game world
-  create: function (entity) {
-    var definition = entities.definitions[entity.name];
+  create(entity) {
+    const definition = entities.definitions[entity.name];
     console.log('Definition is ', definition);
     if (!definition) {
       console.log(entity.name, " is undefined");
@@ -848,7 +847,7 @@ var entities = {
   },
   // Draw the entity on the canvas
   // The images are stretched to cover the 1px skin that Box2D adds to all entities
-  draw: function (entity, position, angle) {
+  draw(entity, position, angle) {
     game.context.translate(position.x * box2d.scale - game.offsetLeft, position.y * box2d.scale);
     game.context.rotate(angle);
     switch (entity.type) {
@@ -903,17 +902,17 @@ var entities = {
   }
 }
 
-var box2d = {
+const box2d = {
   scale: 30,
   velocityIterations: 8,
   positionIterations: 3,
-  init: function () {
-    var gravity = new b2Vec2(0, 9.8);
-    var allowSleep = true;
+  init() {
+    const gravity = new b2Vec2(0, 9.8);
+    const allowSleep = true;
     box2d.world = new b2World(gravity, allowSleep);
     // Setup Debug draw
-    var debugContext = document.getElementById('debugcanvas').getContext('2d');
-    var debugDraw = new b2DebugDraw();
+    const debugContext = document.getElementById('debugcanvas').getContext('2d');
+    const debugDraw = new b2DebugDraw();
     debugDraw.SetSprite(debugContext);
     debugDraw.SetDrawScale(box2d.scale);
     debugDraw.SetFillAlpha(0.3);
@@ -921,7 +920,7 @@ var box2d = {
     debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
     box2d.world.SetDebugDraw(debugDraw);
     // Add collision detection listeners
-    var listener = new Box2D.Dynamics.b2ContactListener;
+    const listener = new Box2D.Dynamics.b2ContactListener();
 
     // listener.PreSolve = function (contact, impulse) {
     //   var body1 = contact.GetFixtureA().GetBody();
@@ -937,12 +936,12 @@ var box2d = {
     // }
     listener.PostSolve = function (contact, impulse) {
       // console.log(contact, impulse);
-      var body1 = contact.GetFixtureA().GetBody();
-      var body2 = contact.GetFixtureB().GetBody();
-      var entity1 = body1.GetUserData();
-      var entity2 = body2.GetUserData();
+      const body1 = contact.GetFixtureA().GetBody();
+      const body2 = contact.GetFixtureB().GetBody();
+      const entity1 = body1.GetUserData();
+      const entity2 = body2.GetUserData();
 
-      var impulseAlongNormal = Math.abs(impulse.normalImpulses[0]);
+      const impulseAlongNormal = Math.abs(impulse.normalImpulses[0]);
       // Filter out tiny impulses
       if (impulseAlongNormal > 5) {
         // Reduce object health by impulse value if they have health
@@ -960,7 +959,7 @@ var box2d = {
     box2d.world.SetContactListener(listener);
   },
   createRectange(entity, definition) {
-    var bodyDef = new b2BodyDef;
+    const bodyDef = new b2BodyDef();
     if (entity.isStatic) {
       bodyDef.type = b2Body.b2_staticBody;
     } else {
@@ -971,20 +970,20 @@ var box2d = {
     if (entity.angle) {
       bodyDef.angle = Math.PI * entity.angle / 180;
     }
-    var fixtureDef = new b2FixtureDef;
+    const fixtureDef = new b2FixtureDef();
     fixtureDef.density = definition.density;
     fixtureDef.friction = definition.friction;
     fixtureDef.restitution = definition.restitution;
     fixtureDef.shape = new b2PolygonShape;
     fixtureDef.shape.SetAsBox(entity.width / 2 / box2d.scale, entity.height / 2 / box2d.scale);
-    var body = box2d.world.CreateBody(bodyDef);
+    const body = box2d.world.CreateBody(bodyDef);
     body.SetUserData(entity);
-    var fixture = body.CreateFixture(fixtureDef);
+    const fixture = body.CreateFixture(fixtureDef);
     return body;
   },
   createCircle(entity, definition) {
-    console.log("Creating Circle with ", entity, definition);
-    var bodyDef = new b2BodyDef;
+    console.log('Creating Circle with ', entity, definition);
+    const bodyDef = new b2BodyDef();
     if (entity.isStatic) {
       bodyDef.type = b2Body.b2_staticBody;
     } else {
@@ -997,21 +996,20 @@ var box2d = {
     if (entity.angle) {
       bodyDef.angle = Math.PI * entity.angle / 180;
     }
-    var fixtureDef = new b2FixtureDef;
+    const fixtureDef = new b2FixtureDef();
     fixtureDef.density = definition.density;
     fixtureDef.friction = definition.friction;
     fixtureDef.restitution = definition.restitution;
     fixtureDef.shape = new b2CircleShape(entity.radius / box2d.scale);
     console.log("Circle fixture is ", fixtureDef);
-    var body = box2d.world.CreateBody(bodyDef);
+    const body = box2d.world.CreateBody(bodyDef);
     body.SetUserData(entity);
-
-    var fixture = body.CreateFixture(fixtureDef);
+    const fixture = body.CreateFixture(fixtureDef);
     console.log("Final Circle body is now ", body);
     return body;
   },
-  step: function (timeStep) {
-    var timeStep = (timeStep <= 2 / 60) ? timeStep : 2 / 60;
+  step(timeStep) {
+    timeStep = (timeStep <= 2 / 60) ? timeStep : 2 / 60;
     box2d.world.Step(timeStep, box2d.velocityIterations, box2d.positionIterations);
   }
 }

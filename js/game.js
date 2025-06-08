@@ -10,8 +10,12 @@ const b2CircleShape = Box2D.Collision.Shapes.b2CircleShape;
 const b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
 const b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef;
 
+// Debug flag used to control logging
+const DEBUG = false;
+const debugLog = (...args) => { if (DEBUG) console.log(...args); };
+
 $(document).ready(() => {
-  console.log('init');
+  debugLog('init');
   game.init();
 });
 
@@ -132,7 +136,7 @@ const game = {
   },
 
   handlePanning() {
-    console.log("Game mode is ", game.mode);
+    debugLog("Game mode is ", game.mode);
     if (game.mode === 'intro') { //why coerce?
       if (game.panTo(700)) {
         game.mode = 'load-next-hero';
@@ -199,7 +203,7 @@ const game = {
       game.panTo(heroX);
       // And when the hero falls asleep or leaves the gameboard, delete him and load the next hero
       const elapsedTime = (new Date().getTime() - game.fireTimer) / 1000;
-      console.log("Time: ", elapsedTime);
+      debugLog("Time: ", elapsedTime);
       if (!game.currentHero.IsAwake() || heroX < 0 || heroX > game.currentLevel.foregroundImage.width || elapsedTime > 10) {
         game.fireTimer = 0;
         box2d.world.DestroyBody(game.currentHero);
@@ -209,9 +213,9 @@ const game = {
     }
     // Be sure to pan back to the left before ending the game
     if (game.mode === 'level-success' || game.mode === 'level-failure') {
-      console.log("end of game detected... panning");
+      debugLog("end of game detected... panning");
       if (game.panTo(0)) {
-        console.log('panning complete');
+        debugLog('panning complete');
         game.ended = true;
         game.showEndingScreen();
       }
@@ -279,7 +283,7 @@ const game = {
     }
   },
   showEndingScreen() {
-    console.log("showing ending screen");
+    debugLog("showing ending screen");
     game.stopBackgroundMusic();
     if (game.mode === 'level-success') {
       if (game.currentLevel.number < levels.data.length - 1) {
@@ -601,7 +605,7 @@ const levels = {
 
   // Load data and images for a selected level
   load(number) {
-    console.log("load called for ", number);
+    debugLog("load called for ", number);
     box2d.init();
     game.currentLevel = {
       number: number,
@@ -805,9 +809,9 @@ const entities = {
   // Turn an entity definition into a Box2D object and add to game world
   create(entity) {
     const definition = entities.definitions[entity.name];
-    console.log('Definition is ', definition);
+    debugLog('Definition is ', definition);
     if (!definition) {
-      console.log(entity.name, " is undefined");
+      debugLog(entity.name, " is undefined");
       return;
     }
     switch (entity.type) {
@@ -820,7 +824,7 @@ const entities = {
         box2d.createRectange(entity, definition);
         break;
       case "ground":
-        console.log("Creating ground with ", entity, definition);
+        debugLog("Creating ground with ", entity, definition);
         entity.shape = 'rectangle';
         box2d.createRectange(entity, definition);
         break;
@@ -841,7 +845,7 @@ const entities = {
         }
         break;
       default:
-        console.log(entity.type + 'is undefined');
+        debugLog(entity.type + 'is undefined');
         break;
     }
   },
@@ -982,7 +986,7 @@ const box2d = {
     return body;
   },
   createCircle(entity, definition) {
-    console.log('Creating Circle with ', entity, definition);
+    debugLog('Creating Circle with ', entity, definition);
     const bodyDef = new b2BodyDef();
     if (entity.isStatic) {
       bodyDef.type = b2Body.b2_staticBody;
@@ -1001,11 +1005,11 @@ const box2d = {
     fixtureDef.friction = definition.friction;
     fixtureDef.restitution = definition.restitution;
     fixtureDef.shape = new b2CircleShape(entity.radius / box2d.scale);
-    console.log("Circle fixture is ", fixtureDef);
+    debugLog("Circle fixture is ", fixtureDef);
     const body = box2d.world.CreateBody(bodyDef);
     body.SetUserData(entity);
     const fixture = body.CreateFixture(fixtureDef);
-    console.log("Final Circle body is now ", body);
+    debugLog("Final Circle body is now ", body);
     return body;
   },
   step(timeStep) {

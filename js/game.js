@@ -817,12 +817,12 @@ const entities = {
         entity.shape = 'rectangle'
         entity.sprite = loader.loadImage('images/entities/' + entity.name + '.png');
         entity.breakSound = game.breakSound[entity.name];
-        box2d.createRectange(entity, definition);
+        box2d.createRectangle(entity, definition);
         break;
       case "ground":
         console.log("Creating ground with ", entity, definition);
         entity.shape = 'rectangle';
-        box2d.createRectange(entity, definition);
+        box2d.createRectangle(entity, definition);
         break;
       case "hero":
       case "villain":
@@ -837,7 +837,7 @@ const entities = {
         } else if (definition.shape === 'rectangle') {
           entity.width = definition.width;
           entity.height = definition.height;
-          box2d.createRectange(entity, definition);
+          box2d.createRectangle(entity, definition);
         }
         break;
       default:
@@ -958,7 +958,7 @@ const box2d = {
     };
     box2d.world.SetContactListener(listener);
   },
-  createRectange(entity, definition) {
+  createRectangle(entity, definition) {
     const bodyDef = new b2BodyDef();
     if (entity.isStatic) {
       bodyDef.type = b2Body.b2_staticBody;

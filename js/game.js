@@ -70,8 +70,7 @@ const game = {
     mouse.init();
 
     // Load sound effects and music
-    // kindergarten by gurdonark is licensed under Creative Commons
-    game.backgroundMusic = loader.loadSound("audio/gurdonark-kindergarten");
+    game.backgroundMusic = loader.loadSound("audio/fruit-fling-symphony");
     game.slingshotReleasedSound = loader.loadSound("audio/bounce");
     game.breakSound = {
       glass: loader.loadSound("audio/glassbreak"),
@@ -236,7 +235,7 @@ const game = {
         const impulseScaleFactor = 0.75;
         const impulse = new b2Vec2(
           (game.slingshotX + 35 - mouse.x - game.offsetLeft) *
-            impulseScaleFactor,
+          impulseScaleFactor,
           (game.slingshotY + 25 - mouse.y) * impulseScaleFactor
         );
         game.fireTimer = new Date().getTime();
@@ -907,8 +906,8 @@ const loader = {
     loader.soundFileExtn = oggSupport
       ? ".ogg"
       : mp3Support
-      ? ".mp3"
-      : undefined;
+        ? ".mp3"
+        : undefined;
   },
 
   loadImage(url) {

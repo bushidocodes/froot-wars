@@ -70,8 +70,7 @@ const game = {
     mouse.init();
 
     // Load sound effects and music
-    // kindergarten by gurdonark is licensed under Creative Commons
-    game.backgroundMusic = loader.loadSound("audio/gurdonark-kindergarten");
+    game.backgroundMusic = loader.loadSound("audio/fruit-fling-symphony");
     game.slingshotReleasedSound = loader.loadSound("audio/bounce");
     game.breakSound = {
       glass: loader.loadSound("audio/glassbreak"),
@@ -236,7 +235,7 @@ const game = {
         const impulseScaleFactor = 0.75;
         const impulse = new b2Vec2(
           (game.slingshotX + 35 - mouse.x - game.offsetLeft) *
-            impulseScaleFactor,
+          impulseScaleFactor,
           (game.slingshotY + 25 - mouse.y) * impulseScaleFactor
         );
         game.fireTimer = new Date().getTime();
@@ -464,7 +463,7 @@ const game = {
     const toggleImage = document.getElementById("togglemusic");
     if (game.backgroundMusic.paused) {
       game.backgroundMusic.play();
-      toggleImage.src = "images/icons/sounds.png";
+      toggleImage.src = "images/icons/sound.png";
     } else {
       game.backgroundMusic.pause();
       toggleImage.src = "images/icons/nosound.png";
@@ -694,6 +693,140 @@ const levels = {
         },
       ],
     },
+    // Level Three
+    {
+      foreground: "desert-foreground",
+      background: "clouds-background",
+      entities: [
+        {
+          type: "ground",
+          name: "dirt",
+          x: 500,
+          y: 440,
+          width: 1000,
+          height: 20,
+          isStatic: true,
+        },
+        {
+          type: "ground",
+          name: "wood",
+          x: 180,
+          y: 390,
+          width: 40,
+          height: 80,
+          isStatic: true,
+        },
+        // Left tower structure
+        {
+          type: "block",
+          name: "wood",
+          x: 400,
+          y: 375,
+          angle: 90,
+          width: 100,
+          height: 25,
+        },
+        {
+          type: "block",
+          name: "wood",
+          x: 500,
+          y: 375,
+          angle: 90,
+          width: 100,
+          height: 25,
+        },
+        {
+          type: "block",
+          name: "glass",
+          x: 450,
+          y: 310,
+          width: 100,
+          height: 25,
+        },
+        {
+          type: "villain",
+          name: "mountaindew",
+          x: 450,
+          y: 260,
+          calories: 180,
+        },
+        // Right tower structure
+        {
+          type: "block",
+          name: "glass",
+          x: 650,
+          y: 375,
+          angle: 90,
+          width: 100,
+          height: 25,
+        },
+        {
+          type: "block",
+          name: "glass",
+          x: 750,
+          y: 375,
+          angle: 90,
+          width: 100,
+          height: 25,
+        },
+        {
+          type: "block",
+          name: "wood",
+          x: 700,
+          y: 310,
+          width: 100,
+          height: 25,
+        },
+        {
+          type: "villain",
+          name: "burger",
+          x: 700,
+          y: 270,
+          calories: 590,
+        },
+        // Center elevated platform
+        {
+          type: "block",
+          name: "wood",
+          x: 575,
+          y: 350,
+          width: 80,
+          height: 25,
+        },
+        {
+          type: "villain",
+          name: "fries",
+          x: 575,
+          y: 320,
+          calories: 420,
+        },
+        // Heroes (fruits for slingshot)
+        {
+          type: "hero",
+          name: "pineapple",
+          x: 40,
+          y: 420,
+        },
+        {
+          type: "hero",
+          name: "orange",
+          x: 90,
+          y: 410,
+        },
+        {
+          type: "hero",
+          name: "apple",
+          x: 150,
+          y: 410,
+        },
+        {
+          type: "hero",
+          name: "strawberry",
+          x: 200,
+          y: 425,
+        },
+      ],
+    },
   ],
   init() {
     let html = "";
@@ -773,8 +906,8 @@ const loader = {
     loader.soundFileExtn = oggSupport
       ? ".ogg"
       : mp3Support
-      ? ".mp3"
-      : undefined;
+        ? ".mp3"
+        : undefined;
   },
 
   loadImage(url) {
@@ -898,9 +1031,18 @@ const entities = {
       friction: 0.5,
       restitution: 0.6,
     },
+    mountaindew: {
+      shape: "rectangle",
+      fullHealth: 70,
+      width: 35,
+      height: 55,
+      density: 1.2,
+      friction: 0.4,
+      restitution: 0.8,
+    },
     apple: {
       shape: "circle",
-      radius: 25,
+      radius: 20,
       density: 1.5,
       // friction: 0.5,
       friction: 1,
@@ -908,7 +1050,7 @@ const entities = {
     },
     orange: {
       shape: "circle",
-      radius: 25,
+      radius: 20,
       density: 1.5,
       // friction: 0.5,
       friction: 1,
@@ -916,11 +1058,18 @@ const entities = {
     },
     strawberry: {
       shape: "circle",
-      radius: 15,
+      radius: 10,
       density: 2.0,
       // friction: 0.5,
       friction: 1,
       restitution: 0.4,
+    },
+    pineapple: {
+      shape: "circle",
+      radius: 35,
+      density: 1.3,
+      friction: 1,
+      restitution: 0.5,
     },
   },
   // Turn an entity definition into a Box2D object and add to game world

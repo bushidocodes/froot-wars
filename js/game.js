@@ -463,7 +463,7 @@ const game = {
     const toggleImage = document.getElementById("togglemusic");
     if (game.backgroundMusic.paused) {
       game.backgroundMusic.play();
-      toggleImage.src = "images/icons/sounds.png";
+      toggleImage.src = "images/icons/sound.png";
     } else {
       game.backgroundMusic.pause();
       toggleImage.src = "images/icons/nosound.png";
@@ -747,7 +747,7 @@ const levels = {
           type: "villain",
           name: "mountaindew",
           x: 450,
-          y: 250,
+          y: 260,
           calories: 180,
         },
         // Right tower structure
@@ -1042,7 +1042,7 @@ const entities = {
     },
     apple: {
       shape: "circle",
-      radius: 25,
+      radius: 20,
       density: 1.5,
       // friction: 0.5,
       friction: 1,
@@ -1050,7 +1050,7 @@ const entities = {
     },
     orange: {
       shape: "circle",
-      radius: 25,
+      radius: 20,
       density: 1.5,
       // friction: 0.5,
       friction: 1,
@@ -1058,7 +1058,7 @@ const entities = {
     },
     strawberry: {
       shape: "circle",
-      radius: 15,
+      radius: 10,
       density: 2.0,
       // friction: 0.5,
       friction: 1,
@@ -1066,7 +1066,7 @@ const entities = {
     },
     pineapple: {
       shape: "circle",
-      radius: 20,
+      radius: 35,
       density: 1.3,
       friction: 1,
       restitution: 0.5,

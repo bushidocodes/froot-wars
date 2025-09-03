@@ -804,7 +804,7 @@ const levels = {
         // Heroes (fruits for slingshot)
         {
           type: "hero",
-          name: "banana",
+          name: "pineapple",
           x: 40,
           y: 420,
         },
@@ -1065,7 +1065,7 @@ const entities = {
       friction: 1,
       restitution: 0.4,
     },
-    banana: {
+    pineapple: {
       shape: "circle",
       radius: 20,
       density: 1.3,

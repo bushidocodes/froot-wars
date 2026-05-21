@@ -977,7 +977,7 @@ const mouse = {
     mouse.down = true;
     mouse.downX = mouse.x;
     mouse.downY = mouse.y;
-    ev.originalEvent.preventDefault();
+    ev.preventDefault();
   },
   // Makes sure that clicks and drags are cut off when the mouse cursor leaves the canvas
   mouseuphandler(ev) {

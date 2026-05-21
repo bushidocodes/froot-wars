@@ -71,7 +71,8 @@ const game = {
 
     // Load sound effects and music
     game.backgroundMusic = loader.loadSound("audio/fruit-fling-symphony");
-    game.slingshotReleasedSound = loader.loadSound("audio/bounce");
+    game.bounceSound = loader.loadSound("audio/bounce");
+    game.slingshotReleasedSound = loader.loadSound("audio/released");
     game.breakSound = {
       glass: loader.loadSound("audio/glassbreak"),
       wood: loader.loadSound("audio/woodbreak"),

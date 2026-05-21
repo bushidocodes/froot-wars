@@ -375,13 +375,20 @@ const game = {
     debugLog("showing ending screen");
     game.stopBackgroundMusic();
     if (game.mode === "level-success") {
+      const key = `highscore-level-${game.currentLevel.number}`;
+      const previous = parseInt(localStorage.getItem(key) || "0", 10);
+      const isNewRecord = game.score > previous;
+      if (isNewRecord) {
+        localStorage.setItem(key, game.score);
+      }
+      const recordNote = isNewRecord ? " New best!" : ` Best: ${previous}`;
       if (game.currentLevel.number < levels.data.length - 1) {
         document.getElementById("endingmessage").innerHTML =
-          "Level Complete. Well Done!!!";
+          `Level Complete. Well Done!!!${recordNote}`;
         document.getElementById("playnextlevel").style.display = "block";
       } else {
         document.getElementById("endingmessage").innerHTML =
-          "All Levels Complete. Well Done!";
+          `All Levels Complete. Well Done!${recordNote}`;
         document.getElementById("playnextlevel").style.display = "none";
       }
     } else if (game.mode === "level-failure") {

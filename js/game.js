@@ -547,6 +547,13 @@ const levels = {
           calories: 420,
         },
         {
+          type: "villain",
+          name: "watermelon",
+          x: 720,
+          y: 410,
+          calories: 300,
+        },
+        {
           type: "hero",
           name: "orange",
           x: 90,
@@ -674,6 +681,13 @@ const levels = {
           calories: 150,
         },
         {
+          type: "villain",
+          name: "pizza",
+          x: 870,
+          y: 410,
+          calories: 285,
+        },
+        {
           type: "hero",
           name: "strawberry",
           x: 40,
@@ -799,6 +813,13 @@ const levels = {
           x: 575,
           y: 320,
           calories: 420,
+        },
+        {
+          type: "villain",
+          name: "sodaglass",
+          x: 850,
+          y: 390,
+          calories: 120,
         },
         // Heroes (fruits for slingshot)
         {
@@ -1069,6 +1090,31 @@ const entities = {
       radius: 35,
       density: 1.3,
       friction: 1,
+      restitution: 0.5,
+    },
+    watermelon: {
+      shape: "circle",
+      fullHealth: 80,
+      radius: 30,
+      density: 1.8,
+      friction: 0.6,
+      restitution: 0.2,
+    },
+    pizza: {
+      shape: "circle",
+      fullHealth: 60,
+      radius: 28,
+      density: 1.1,
+      friction: 0.5,
+      restitution: 0.3,
+    },
+    sodaglass: {
+      shape: "rectangle",
+      fullHealth: 60,
+      width: 35,
+      height: 50,
+      density: 0.9,
+      friction: 0.4,
       restitution: 0.5,
     },
   },

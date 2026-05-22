@@ -962,6 +962,10 @@ const mouse = {
     canvas.addEventListener("mousedown", mouse.mousedownhandler);
     canvas.addEventListener("mouseup", mouse.mouseuphandler);
     canvas.addEventListener("mouseout", mouse.mouseuphandler);
+    // Touch events for mobile devices
+    canvas.addEventListener("touchmove", mouse.touchmovehandler, { passive: false });
+    canvas.addEventListener("touchstart", mouse.touchstarthandler, { passive: false });
+    canvas.addEventListener("touchend", mouse.mouseuphandler);
   },
   // Handles general mouse movement on the canvas
   mousemovehandler(ev) {
@@ -984,6 +988,24 @@ const mouse = {
   mouseuphandler(ev) {
     mouse.down = false;
     mouse.dragging = false;
+  },
+  touchmovehandler(ev) {
+    ev.preventDefault();
+    const touch = ev.touches[0];
+    const rect = document.getElementById("gamecanvas").getBoundingClientRect();
+    mouse.x = touch.clientX - rect.left;
+    mouse.y = touch.clientY - rect.top;
+    if (mouse.down) {
+      mouse.dragging = true;
+    }
+  },
+  touchstarthandler(ev) {
+    ev.preventDefault();
+    mouse.down = true;
+    const touch = ev.touches[0];
+    const rect = document.getElementById("gamecanvas").getBoundingClientRect();
+    mouse.x = touch.clientX - rect.left;
+    mouse.y = touch.clientY - rect.top;
   },
 };
 

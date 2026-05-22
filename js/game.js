@@ -905,27 +905,9 @@ const loader = {
   loaded: true,
   loadedCount: 0,
   totalCount: 0,
-  soundFileExtn: ".ogg",
+  soundFileExtn: ".mp3",
 
   init() {
-    let mp3Support, oggSupport;
-    const audio = document.createElement("audio");
-    if (audio.canPlayType) {
-      // Check to see if canPlayType returns truthy
-      mp3Support = "" != audio.canPlayType("audio/mpeg");
-      oggSupport = "" != audio.canPlayType('audio/ogg; codecs="vorbis"');
-    } else {
-      mp3Support = false;
-      oggSupport = false;
-    }
-
-    // Instruct the loader to load the supported filetype
-    // Using nested ternaries. sort of strange
-    loader.soundFileExtn = oggSupport
-      ? ".ogg"
-      : mp3Support
-        ? ".mp3"
-        : undefined;
   },
 
   loadImage(url) {

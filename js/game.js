@@ -1090,6 +1090,7 @@ const entities = {
           "images/entities/" + entity.name + ".png"
         );
         entity.breakSound = game.breakSound[entity.name];
+        entity.bounceSound = game.bounceSound;
         box2d.createRectangle(entity, definition);
         break;
       case "ground":

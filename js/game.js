@@ -1,4 +1,3 @@
-// Ghetto Import Box2D
 const b2Vec2 = Box2D.Common.Math.b2Vec2;
 const b2BodyDef = Box2D.Dynamics.b2BodyDef;
 const b2Body = Box2D.Dynamics.b2Body;
@@ -121,12 +120,9 @@ const game = {
       game.offsetLeft <= game.maxOffset &&
       game.offsetLeft >= game.minOffset
     ) {
-      // Set deltaX to the mininum distance needed to get the newCenter within the center 50% of the screen.
-      // Why divide by 2 though????
       let deltaX = Math.round(
         (newCenter - game.offsetLeft - game.canvas.width / 4) / 2
       );
-      // Here maxSpeed seems to speed up panning, now slow it down???
       if (deltaX && Math.abs(deltaX) > game.maxSpeed) {
         deltaX = (game.maxSpeed * Math.abs(deltaX)) / deltaX;
       }
@@ -176,7 +172,6 @@ const game = {
   handlePanning() {
     debugLog("Game mode is ", game.mode);
     if (game.mode === "intro") {
-      //why coerce?
       if (game.panTo(700)) {
         game.mode = "load-next-hero";
       }
@@ -250,7 +245,6 @@ const game = {
     if (game.mode === "fired") {
       // Pan to where hero is
       const heroX = game.currentHero.GetPosition().x * box2d.scale;
-      //console.log("HERO :", game.currentHero);
       game.panTo(heroX);
       // And when the hero falls asleep or leaves the gameboard, delete him and load the next hero
       const elapsedTime = (new Date().getTime() - game.fireTimer) / 1000;
@@ -852,8 +846,6 @@ const levels = {
   ],
   init() {
     let html = "";
-    // Dynamically create level buttons for all level objects in levels.data
-    //seem like a silly use of forEach since we only use the index
     levels.data.forEach((level, index) => {
       html += `<input type='button' value=${index + 1}>`;
     });
@@ -909,9 +901,6 @@ const loader = {
   soundFileExtn: ".ogg",
 
   init() {
-    // determine compatible game music for browser.
-    // audio.canPlayType returns strings like 'maybe' or 'probably' to guess if audio will play
-    // I suspect that mp3 now plays on all browsers????
     let mp3Support, oggSupport;
     const audio = document.createElement("audio");
     if (audio.canPlayType) {
@@ -1088,7 +1077,6 @@ const entities = {
       shape: "circle",
       radius: 20,
       density: 1.5,
-      // friction: 0.5,
       friction: 1,
       restitution: 0.4,
     },
@@ -1096,7 +1084,6 @@ const entities = {
       shape: "circle",
       radius: 20,
       density: 1.5,
-      // friction: 0.5,
       friction: 1,
       restitution: 0.4,
     },
@@ -1104,7 +1091,6 @@ const entities = {
       shape: "circle",
       radius: 10,
       density: 2.0,
-      // friction: 0.5,
       friction: 1,
       restitution: 0.4,
     },

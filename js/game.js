@@ -7,7 +7,6 @@ const b2World = Box2D.Dynamics.b2World;
 const b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape;
 const b2CircleShape = Box2D.Collision.Shapes.b2CircleShape;
 const b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
-const b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef;
 
 // Debug flag used to control logging
 const DEBUG = false;
@@ -18,6 +17,13 @@ const debugLog = (...args) => {
 // Dimensions of the game board
 const BOARD_WIDTH = 640;
 const BOARD_HEIGHT = 480;
+
+// Slingshot prong attachment points (pixel offsets from slingshotX/slingshotY)
+const SLINGSHOT_LEFT_PRONG_X  = 50;
+const SLINGSHOT_LEFT_PRONG_Y  = 25;
+const SLINGSHOT_RIGHT_PRONG_X = 10;
+const SLINGSHOT_RIGHT_PRONG_Y = 30;
+const SLINGSHOT_CENTER_X      = 35; // midpoint used for impulse direction
 
 document.addEventListener("DOMContentLoaded", () => {
   debugLog("init");
@@ -65,7 +71,6 @@ const game = {
   init() {
     //Initialize objects
     levels.init();
-    loader.init();
     mouse.init();
 
     // Load sound effects and music
@@ -106,10 +111,7 @@ const game = {
     game.offsetLeft = 0; // offset value for how far our screen has panned right
     game.ended = false;
     game.hero = undefined;
-    game.animationFrame = window.requestAnimationFrame(
-      game.animate,
-      game.canvas
-    );
+    game.animationFrame = window.requestAnimationFrame(game.animate);
   },
 
   // Pan the screen to center on newCenter
@@ -230,9 +232,9 @@ const game = {
         game.slingshotReleasedSound.play();
         const impulseScaleFactor = 0.75;
         const impulse = new b2Vec2(
-          (game.slingshotX + 35 - mouse.x - game.offsetLeft) *
+          (game.slingshotX + SLINGSHOT_CENTER_X - mouse.x - game.offsetLeft) *
           impulseScaleFactor,
-          (game.slingshotY + 25 - mouse.y) * impulseScaleFactor
+          (game.slingshotY + SLINGSHOT_LEFT_PRONG_Y - mouse.y) * impulseScaleFactor
         );
         game.fireTimer = performance.now();
         game.currentHero.ApplyImpulse(
@@ -332,26 +334,24 @@ const game = {
     );
 
     if (!game.ended) {
-      game.animationFrame = window.requestAnimationFrame(
-        game.animate,
-        game.canvas
-      );
+      game.animationFrame = window.requestAnimationFrame(game.animate);
     }
   },
   drawAllBodies() {
     box2d.world.DrawDebugData();
 
-    //Iterate through all of the bodies and draw them on the canvas.
-    //strange loop that uses Box2D's GetBodyList and GetNext() methods
-    for (let body = box2d.world.GetBodyList(); body; body = body.GetNext()) {
+    // Save next pointer before any DestroyBody call — destroying a body unlinks
+    // it from the list, making GetNext() on the destroyed node undefined behavior.
+    let body = box2d.world.GetBodyList();
+    while (body) {
+      const nextBody = body.GetNext();
       const entity = body.GetUserData();
-      // if (body.IsAwake()) console.log(body);
       if (entity) {
         const entityX = body.GetPosition().x * box2d.scale;
         if (
           entityX < 0 ||
           entityX > game.currentLevel.foregroundImage.width ||
-          (entity.health && entity.health <= 0)
+          (entity.health !== undefined && entity.health <= 0)
         ) {
           box2d.world.DestroyBody(body);
           if (entity.type === "villain") {
@@ -363,6 +363,7 @@ const game = {
           entities.draw(entity, body.GetPosition(), body.GetAngle());
         }
       }
+      body = nextBody;
     }
   },
   showEndingScreen() {
@@ -401,6 +402,7 @@ const game = {
   },
   startNextLevel() {
     window.cancelAnimationFrame(game.animationFrame);
+    game.currentHero = undefined;
     game.lastUpdateTime = undefined;
     levels.load(game.currentLevel.number + 1);
   },
@@ -412,8 +414,8 @@ const game = {
     const heroX = game.currentHero.GetPosition().x * box2d.scale;
     const heroY = game.currentHero.GetPosition().y * box2d.scale;
     const angle = Math.atan2(
-      game.slingshotY + 25 - heroY,
-      game.slingshotX + 50 - heroX
+      game.slingshotY + SLINGSHOT_LEFT_PRONG_Y - heroY,
+      game.slingshotX + SLINGSHOT_LEFT_PRONG_X - heroX
     );
     const heroFarEdgeX = heroX - radius * Math.cos(angle);
     const heroFarEdgeY = heroY - radius * Math.sin(angle);
@@ -421,8 +423,8 @@ const game = {
     game.context.beginPath();
     // Draw from rear top of slingshot
     game.context.moveTo(
-      game.slingshotX + 50 - game.offsetLeft,
-      game.slingshotY + 25
+      game.slingshotX + SLINGSHOT_LEFT_PRONG_X - game.offsetLeft,
+      game.slingshotY + SLINGSHOT_LEFT_PRONG_Y
     );
     // to the center of the hero
     game.context.lineTo(heroX - game.offsetLeft, heroY);
@@ -438,14 +440,14 @@ const game = {
     game.context.moveTo(heroFarEdgeX - game.offsetLeft, heroFarEdgeY);
     // Draw line from the edge of the hero to the front top of slingshot
     game.context.lineTo(
-      game.slingshotX - game.offsetLeft + 10,
-      game.slingshotY + 30
+      game.slingshotX - game.offsetLeft + SLINGSHOT_RIGHT_PRONG_X,
+      game.slingshotY + SLINGSHOT_RIGHT_PRONG_Y
     );
     game.context.stroke();
 
     game.context.moveTo(
-      game.slingshotX + 50 - game.offsetLeft,
-      game.slingshotY + 25
+      game.slingshotX + SLINGSHOT_LEFT_PRONG_X - game.offsetLeft,
+      game.slingshotY + SLINGSHOT_LEFT_PRONG_Y
     );
   },
 
@@ -871,7 +873,6 @@ const levels = {
     box2d.init();
     game.currentLevel = {
       number: number,
-      hero: [],
     };
     game.score = 0;
     document.getElementById("score").innerHTML = "Score: " + game.score;
@@ -905,9 +906,6 @@ const loader = {
   loadedCount: 0,
   totalCount: 0,
   soundFileExtn: ".mp3",
-
-  init() {
-  },
 
   loadImage(url) {
     this.totalCount++;
@@ -1166,6 +1164,7 @@ const entities = {
   // Draw the entity on the canvas
   // The images are stretched to cover the 1px skin that Box2D adds to all entities
   draw(entity, position, angle) {
+    game.context.save();
     game.context.translate(
       position.x * box2d.scale - game.offsetLeft,
       position.y * box2d.scale
@@ -1217,11 +1216,7 @@ const entities = {
         // ground is an invisible entity
         break;
     }
-    game.context.rotate(-angle);
-    game.context.translate(
-      -position.x * box2d.scale + game.offsetLeft,
-      -position.y * box2d.scale
-    );
+    game.context.restore();
   },
 };
 
@@ -1261,10 +1256,10 @@ class Box2d {
       // Filter out tiny impulses
       if (impulseAlongNormal > 5) {
         // Reduce object health by impulse value if they have health
-        if (entity1.health) {
+        if (entity1.health !== undefined) {
           entity1.health -= impulseAlongNormal;
         }
-        if (entity2.health) {
+        if (entity2.health !== undefined) {
           entity2.health -= impulseAlongNormal;
         }
         // Play bounce sounds
@@ -1298,7 +1293,7 @@ class Box2d {
     );
     const body = this.world.CreateBody(bodyDef);
     body.SetUserData(entity);
-    const fixture = body.CreateFixture(fixtureDef);
+    body.CreateFixture(fixtureDef);
     return body;
   }
 
@@ -1325,7 +1320,7 @@ class Box2d {
     debugLog("Circle fixture is ", fixtureDef);
     const body = this.world.CreateBody(bodyDef);
     body.SetUserData(entity);
-    const fixture = body.CreateFixture(fixtureDef);
+    body.CreateFixture(fixtureDef);
     debugLog("Final Circle body is now ", body);
     return body;
   }

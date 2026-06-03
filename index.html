@@ -3,10 +3,11 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Froot Wars</title>
   <link rel="icon" href="data:,">
-  <script src="js/Box2dWeb-2.1.a.3.min.js" type='text/javascript' charset='utf-8'></script>
-  <script src="./js/game.js"></script>
+  <script src="js/Box2dWeb-2.1.a.3.min.js" defer></script>
+  <script src="./js/game.js" defer></script>
   <link rel="stylesheet" type="text/css" href="./css/styles.css">
 </head>
 
@@ -16,7 +17,7 @@
     </canvas>
     <div id="scorescreen" class="gamelayer">
       <img src="./images/icons/sound.png" alt="music toggle" id="togglemusic">
-      <img src="./images/icons/prev.png" id="restartlevel">
+      <img src="./images/icons/prev.png" id="restartlevel" alt="Restart level">
       <span id="score">Score: 0</span>
     </div>
     <div id="gamestartscreen" class="gamelayer">
@@ -32,7 +33,7 @@
         <p id="endingmessage">The level is Over Message</p>
           <p id="playcurrentlevel"><img src="./images/icons/prev.png" alt="Previous">Replay Current Level</p>
           <p id="playnextlevel"><img src="./images/icons/next.png" alt="Next">Play Next Level</p>
-          <p id="showLevelScreen"><img src="./images/icons/return.png">Return to Level Screen</p>
+          <p id="showLevelScreen"><img src="./images/icons/return.png" alt="Return">Return to Level Screen</p>
       </div>
     </div>
   </div>

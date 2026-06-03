@@ -234,7 +234,7 @@ const game = {
           impulseScaleFactor,
           (game.slingshotY + 25 - mouse.y) * impulseScaleFactor
         );
-        game.fireTimer = new Date().getTime();
+        game.fireTimer = performance.now();
         game.currentHero.ApplyImpulse(
           impulse,
           game.currentHero.GetWorldCenter()
@@ -247,7 +247,7 @@ const game = {
       const heroX = game.currentHero.GetPosition().x * box2d.scale;
       game.panTo(heroX);
       // And when the hero falls asleep or leaves the gameboard, delete him and load the next hero
-      const elapsedTime = (new Date().getTime() - game.fireTimer) / 1000;
+      const elapsedTime = (performance.now() - game.fireTimer) / 1000;
       debugLog("Time: ", elapsedTime);
       if (
         !game.currentHero.IsAwake() ||
@@ -272,19 +272,18 @@ const game = {
     }
   },
 
-  animate() {
+  animate(timestamp) {
     // Animate the background
     game.handlePanning();
 
     // Animate the characters using a variable step rate derived from the framerate of requestAnimationFrame
-    const currentTime = new Date().getTime();
     let timeStep;
     if (game.lastUpdateTime) {
-      timeStep = (currentTime - game.lastUpdateTime) / 1000;
+      timeStep = (timestamp - game.lastUpdateTime) / 1000;
       box2d.step(timeStep);
     }
 
-    game.lastUpdateTime = currentTime;
+    game.lastUpdateTime = timestamp;
 
     // Draw the background with parallax
     game.context.drawImage(

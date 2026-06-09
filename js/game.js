@@ -1252,6 +1252,9 @@ class Box2d {
       const entity1 = body1.GetUserData();
       const entity2 = body2.GetUserData();
 
+      // Guard against bodies with no userData (e.g. static ground bodies)
+      if (!entity1 || !entity2) return;
+
       const impulseAlongNormal = Math.abs(impulse.normalImpulses[0]);
       // Filter out tiny impulses
       if (impulseAlongNormal > 5) {

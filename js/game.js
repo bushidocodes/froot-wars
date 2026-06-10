@@ -1255,16 +1255,14 @@ class Box2d {
       const impulseAlongNormal = Math.abs(impulse.normalImpulses[0]);
       // Filter out tiny impulses
       if (impulseAlongNormal > 5) {
-        // Reduce object health by impulse value if they have health
-        if (entity1.health !== undefined) {
-          entity1.health -= impulseAlongNormal;
+        if (entity1) {
+          if (entity1.health !== undefined) entity1.health -= impulseAlongNormal;
+          if (entity1.bounceSound) entity1.bounceSound.play();
         }
-        if (entity2.health !== undefined) {
-          entity2.health -= impulseAlongNormal;
+        if (entity2) {
+          if (entity2.health !== undefined) entity2.health -= impulseAlongNormal;
+          if (entity2.bounceSound) entity2.bounceSound.play();
         }
-        // Play bounce sounds
-        if (entity1.bounceSound) entity1.bounceSound.play();
-        if (entity2.bounceSound) entity2.bounceSound.play();
       }
     };
     this.world.SetContactListener(listener);

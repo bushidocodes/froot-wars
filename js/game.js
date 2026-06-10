@@ -871,6 +871,10 @@ const levels = {
   load(number) {
     debugLog("load called for ", number);
     box2d.init();
+    // Reset asset counters so load-complete detection works correctly on restart
+    loader.loadedCount = 0;
+    loader.totalCount = 0;
+    loader.loaded = true;
     game.currentLevel = {
       number: number,
     };

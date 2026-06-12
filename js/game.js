@@ -572,8 +572,8 @@ const levels = {
     },
     // Level Two
     {
-      foreground: "desert-foreground",
-      background: "clouds-background",
+      foreground: "jungle-foreground",
+      background: "jungle-background",
       entities: [
         {
           type: "ground",
@@ -712,8 +712,8 @@ const levels = {
     },
     // Level Three
     {
-      foreground: "desert-foreground",
-      background: "clouds-background",
+      foreground: "city-foreground",
+      background: "night-background",
       entities: [
         {
           type: "ground",

@@ -30,3 +30,28 @@ py -m http.server 8000
 ```
 
 Once the server is running you can access the game at `http://localhost:8000`.
+
+## Development
+
+The game itself ships with no build step — the files served above are exactly
+what runs in the browser. The tooling below is only for development and CI; it
+is never required to play the game.
+
+Install the dev dependencies once:
+
+```bash
+npm install
+```
+
+Then:
+
+```bash
+npm run lint   # ESLint over js/ and the tests
+npm test       # Vitest unit tests (jsdom)
+```
+
+The tests load `js/game.js` unmodified inside a faked Box2D + DOM environment
+(see `test/helpers/loadGame.js`) and cover level-data integrity, level
+loading, scoring/high-score persistence, the asset loader, camera panning, and
+collision damage. Both commands run automatically on every push and pull
+request via [GitHub Actions](.github/workflows/ci.yml).

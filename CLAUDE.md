@@ -22,10 +22,31 @@ py -m http.server 8000        # Windows
 Then open `http://localhost:8000`. The server starts instantly and runs until
 you Ctrl+C it — that's expected, don't cancel it thinking it's hung.
 
-There are no tests, no linter, and no build. Refresh the browser to see
-changes. After any code change, manually walk through: main menu → level
-select → play one level → fire a hero → confirm score updates → restart.
-Check the browser console for errors.
+There is no build step — refresh the browser to see changes. After any code
+change, manually walk through: main menu → level select → play one level →
+fire a hero → confirm score updates → restart. Check the browser console for
+errors.
+
+## Tests and linting
+
+There is a Vitest unit-test suite and ESLint config (dev-only; the game still
+ships with no build step and runs straight from the static files). Install dev
+dependencies once with `npm install`, then:
+
+```sh
+npm test    # Vitest, jsdom environment
+npm run lint
+```
+
+The tests load [js/game.js](js/game.js) verbatim inside a faked Box2D + DOM
+harness ([test/helpers/loadGame.js](test/helpers/loadGame.js)) and cover
+level-data integrity, level loading, scoring/high-score persistence, the asset
+loader, camera panning, and collision damage. Both run in CI
+([.github/workflows/ci.yml](.github/workflows/ci.yml)) on every push and PR.
+The harness loads the source through `new Function(...)` so each test gets an
+isolated instance; if you add a new top-level `const` module object to
+game.js, add it to the harness's return list to test it. Manual browser
+walkthrough is still the way to verify rendering and input.
 
 ## Code layout
 

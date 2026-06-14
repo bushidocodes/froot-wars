@@ -1,11 +1,13 @@
 // Test harness for js/game.js.
 //
-// game.js is a browser script: it declares everything on top-level `const`
-// bindings (game, levels, loader, mouse, entities, box2d) and expects planck,
-// the DOM, localStorage, Image and Audio to exist as globals. Rather than
-// refactor the source to add module exports, we load it verbatim inside a
-// function wrapper that captures those bindings and returns them, after
-// installing a faithful-enough fake Planck.js and a DOM fixture.
+// game.js is an ES module: it imports Planck.js and declares its objects
+// (game, levels, loader, mouse, entities, box2d) on top-level `const` bindings.
+// To get a fresh, isolated instance per test we load the source verbatim inside
+// a `new Function(...)` wrapper instead of `import()` (which caches a single
+// instance). `new Function` can't contain ESM syntax, so we rewrite game.js's
+// one `import` line into a `const { ... } = planck` destructure of an injected
+// fake-Planck parameter and drop its `export` line, then run it against a faked
+// DOM, localStorage, Image and Audio.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -210,18 +212,25 @@ function installFixture() {
 export function loadGame() {
   installFixture();
 
-  globalThis.planck = makePlanck();
   globalThis.Image = FakeImage;
   globalThis.Audio = FakeAudio;
   window.requestAnimationFrame = () => 0;
   window.cancelAnimationFrame = () => {};
   localStorage.clear();
 
+  // Rewrite the ESM syntax so the source runs inside new Function(): turn the
+  // `import { ... } from "./planck.esm.js"` into a destructure of the injected
+  // `planck` param, and drop the trailing `export { ... }`.
+  const body = GAME_SRC.replace(
+    /^import\s*\{([^}]*)\}\s*from\s*["'][^"']*["'];?\s*$/m,
+    "const {$1} = planck;",
+  ).replace(/^export\s*\{[^}]*\};?\s*$/m, "");
+
   const factory = new Function(
-    GAME_SRC +
-      "\nreturn { game, levels, loader, mouse, entities, box2d, Box2d };",
+    "planck",
+    body + "\nreturn { game, levels, loader, mouse, entities, box2d, Box2d };",
   );
-  const modules = factory();
+  const modules = factory(makePlanck());
 
   // Run the game's own init so sound effects, canvas/context and the
   // hero/villain break sounds are wired up exactly as in the browser. This is

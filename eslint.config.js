@@ -4,19 +4,18 @@ import globals from "globals";
 export default [
   // Vendored Planck.js is not ours to lint.
   {
-    ignores: ["js/planck.min.js", "node_modules/**", "coverage/**"],
+    ignores: ["js/planck.esm.js", "node_modules/**", "coverage/**"],
   },
 
-  // Game source: browser environment, planck provided as a global by index.html.
+  // Game source: an ES module running in the browser; Planck is imported.
   {
     files: ["js/**/*.js"],
     ...js.configs.recommended,
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: "script",
+      sourceType: "module",
       globals: {
         ...globals.browser,
-        planck: "readonly",
       },
     },
     rules: {

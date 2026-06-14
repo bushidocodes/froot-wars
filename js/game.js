@@ -1,12 +1,4 @@
-const b2Vec2 = Box2D.Common.Math.b2Vec2;
-const b2BodyDef = Box2D.Dynamics.b2BodyDef;
-const b2Body = Box2D.Dynamics.b2Body;
-const b2FixtureDef = Box2D.Dynamics.b2FixtureDef;
-const b2Fixture = Box2D.Dynamics.b2Fixture;
-const b2World = Box2D.Dynamics.b2World;
-const b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape;
-const b2CircleShape = Box2D.Collision.Shapes.b2CircleShape;
-const b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
+const { World, Vec2, Box, Circle } = planck;
 
 // Debug flag used to control logging
 const DEBUG = false;
@@ -145,8 +137,8 @@ const game = {
   countHeroesAndVillains() {
     game.heroes = [];
     game.villains = [];
-    for (let body = box2d.world.GetBodyList(); body; body = body.GetNext()) {
-      const entity = body.GetUserData();
+    for (let body = box2d.world.getBodyList(); body; body = body.getNext()) {
+      const entity = body.getUserData();
       if (entity) {
         if (entity.type === "hero") {
           game.heroes.push(body);
@@ -163,12 +155,27 @@ const game = {
     if (!game.currentHero) {
       return false;
     }
-    const position = game.currentHero.GetPosition();
+    const position = game.currentHero.getPosition();
     const distanceSquared =
       Math.pow(position.x * box2d.scale - mouse.x - game.offsetLeft, 2) +
       Math.pow(position.y * box2d.scale - mouse.y, 2);
-    const radiusSquared = Math.pow(game.currentHero.GetUserData().radius, 2);
+    const radiusSquared = Math.pow(game.currentHero.getUserData().radius, 2);
     return distanceSquared <= radiusSquared;
+  },
+
+  // Park the current hero in the slingshot pouch, holding it still each frame.
+  // This replaces the old approach of resting it on a physics post, which a
+  // steeply-launched hero would graze on the way up.
+  holdHeroInSlingshot() {
+    if (!game.currentHero) {
+      return;
+    }
+    game.currentHero.setPosition({
+      x: (game.slingshotX + SLINGSHOT_CENTER_X) / box2d.scale,
+      y: (game.slingshotY + SLINGSHOT_LEFT_PRONG_Y) / box2d.scale,
+    });
+    game.currentHero.setLinearVelocity({ x: 0, y: 0 });
+    game.currentHero.setAngularVelocity(0);
   },
 
   handlePanning() {
@@ -191,18 +198,13 @@ const game = {
       }
       if (!game.currentHero) {
         game.currentHero = game.heroes[game.heroes.length - 1];
-        game.currentHero.SetPosition({
-          x: 180 / box2d.scale,
-          y: 200 / box2d.scale,
-        });
-        game.currentHero.SetLinearVelocity({ x: 0, y: 0 });
-        game.currentHero.SetAngularVelocity(0);
-        game.currentHero.SetAwake(true);
-      } else {
-        game.panTo(game.slingshotX);
-        if (!game.currentHero.IsAwake()) {
-          game.mode = "wait-for-firing";
-        }
+      }
+      // Hold the hero in the slingshot pouch. There is no physics body under
+      // the slingshot, so a launched hero can never catch or ricochet on it.
+      game.holdHeroInSlingshot();
+      // Once the camera has settled back on the slingshot, the hero is ready.
+      if (game.panTo(game.slingshotX)) {
+        game.mode = "wait-for-firing";
       }
     }
 
@@ -217,13 +219,15 @@ const game = {
       } else {
         // auto pan back to slingshot when player is not dragging mouse to pan right
         game.panTo(game.slingshotX);
+        // Keep the hero parked in the pouch until the player grabs it.
+        game.holdHeroInSlingshot();
       }
     }
 
     if (game.mode === "firing") {
       if (mouse.down) {
         game.panTo(game.slingshotX);
-        game.currentHero.SetPosition({
+        game.currentHero.setPosition({
           x: (mouse.x + game.offsetLeft) / box2d.scale,
           y: mouse.y / box2d.scale,
         });
@@ -231,34 +235,41 @@ const game = {
         game.mode = "fired";
         game.slingshotReleasedSound.play();
         const impulseScaleFactor = 0.75;
-        const impulse = new b2Vec2(
+        const impulse = Vec2(
           (game.slingshotX + SLINGSHOT_CENTER_X - mouse.x - game.offsetLeft) *
           impulseScaleFactor,
           (game.slingshotY + SLINGSHOT_LEFT_PRONG_Y - mouse.y) * impulseScaleFactor
         );
         game.fireTimer = performance.now();
-        game.currentHero.ApplyImpulse(
+        // Discard the velocity accumulated while aiming: gravity tugs the
+        // dragged hero downward every frame, and without this the launch loses
+        // a chunk of its upward kick (the longer the aim, the more is lost).
+        // The shot should be exactly the pull impulse.
+        game.currentHero.setLinearVelocity({ x: 0, y: 0 });
+        game.currentHero.setAngularVelocity(0);
+        game.currentHero.applyLinearImpulse(
           impulse,
-          game.currentHero.GetWorldCenter()
+          game.currentHero.getWorldCenter(),
+          true
         );
       }
     }
 
     if (game.mode === "fired") {
       // Pan to where hero is
-      const heroX = game.currentHero.GetPosition().x * box2d.scale;
+      const heroX = game.currentHero.getPosition().x * box2d.scale;
       game.panTo(heroX);
       // And when the hero falls asleep or leaves the gameboard, delete him and load the next hero
       const elapsedTime = (performance.now() - game.fireTimer) / 1000;
       debugLog("Time: ", elapsedTime);
       if (
-        !game.currentHero.IsAwake() ||
+        !game.currentHero.isAwake() ||
         heroX < 0 ||
         heroX > game.currentLevel.foregroundImage.width ||
         elapsedTime > 10
       ) {
         game.fireTimer = 0;
-        box2d.world.DestroyBody(game.currentHero);
+        box2d.world.destroyBody(game.currentHero);
         game.currentHero = undefined;
         game.mode = "load-next-hero";
       }
@@ -338,29 +349,32 @@ const game = {
     }
   },
   drawAllBodies() {
-    box2d.world.DrawDebugData();
-
-    // Save next pointer before any DestroyBody call — destroying a body unlinks
+    // Save next pointer before any destroyBody call — destroying a body unlinks
     // it from the list, making GetNext() on the destroyed node undefined behavior.
-    let body = box2d.world.GetBodyList();
+    let body = box2d.world.getBodyList();
     while (body) {
-      const nextBody = body.GetNext();
-      const entity = body.GetUserData();
+      const nextBody = body.getNext();
+      const entity = body.getUserData();
       if (entity) {
-        const entityX = body.GetPosition().x * box2d.scale;
+        const entityX = body.getPosition().x * box2d.scale;
         if (
-          entityX < 0 ||
-          entityX > game.currentLevel.foregroundImage.width ||
-          (entity.health !== undefined && entity.health <= 0)
+          // The current hero's lifecycle is owned by the "fired" state, which
+          // clears game.currentHero when it destroys the body. Destroying it
+          // here too would leave game.currentHero pointing at a dead body,
+          // which crashes the next setPosition (e.g. holdHeroInSlingshot).
+          body !== game.currentHero &&
+          (entityX < 0 ||
+            entityX > game.currentLevel.foregroundImage.width ||
+            (entity.health !== undefined && entity.health <= 0))
         ) {
-          box2d.world.DestroyBody(body);
+          box2d.world.destroyBody(body);
           if (entity.type === "villain") {
             game.score += entity.calories;
             document.getElementById("score").innerHTML = "Score: " + game.score;
           }
           if (entity.breakSound) entity.breakSound.play();
         } else {
-          entities.draw(entity, body.GetPosition(), body.GetAngle());
+          entities.draw(entity, body.getPosition(), body.getAngle());
         }
       }
       body = nextBody;
@@ -410,9 +424,9 @@ const game = {
     game.context.strokeStyle = "rgb(68,31,11)";
     game.context.lineWidth = 6;
 
-    const radius = game.currentHero.GetUserData().radius;
-    const heroX = game.currentHero.GetPosition().x * box2d.scale;
-    const heroY = game.currentHero.GetPosition().y * box2d.scale;
+    const radius = game.currentHero.getUserData().radius;
+    const heroX = game.currentHero.getPosition().x * box2d.scale;
+    const heroY = game.currentHero.getPosition().y * box2d.scale;
     const angle = Math.atan2(
       game.slingshotY + SLINGSHOT_LEFT_PRONG_Y - heroY,
       game.slingshotX + SLINGSHOT_LEFT_PRONG_X - heroX
@@ -431,9 +445,9 @@ const game = {
     game.context.stroke();
     // Draw the hero on the band
     entities.draw(
-      game.currentHero.GetUserData(),
-      game.currentHero.GetPosition(),
-      game.currentHero.GetAngle()
+      game.currentHero.getUserData(),
+      game.currentHero.getPosition(),
+      game.currentHero.getAngle()
     );
     game.context.beginPath();
     // Move to the edge of the hero
@@ -488,15 +502,6 @@ const levels = {
           y: 440,
           width: 1000,
           height: 20,
-          isStatic: true,
-        },
-        {
-          type: "ground",
-          name: "wood",
-          x: 180,
-          y: 390,
-          width: 40,
-          height: 80,
           isStatic: true,
         },
         {
@@ -582,15 +587,6 @@ const levels = {
           y: 440,
           width: 1000,
           height: 20,
-          isStatic: true,
-        },
-        {
-          type: "ground",
-          name: "wood",
-          x: 180,
-          y: 390,
-          width: 40,
-          height: 80,
           isStatic: true,
         },
         {
@@ -722,15 +718,6 @@ const levels = {
           y: 440,
           width: 1000,
           height: 20,
-          isStatic: true,
-        },
-        {
-          type: "ground",
-          name: "wood",
-          x: 180,
-          y: 390,
-          width: 40,
-          height: 80,
           isStatic: true,
         },
         // Left tower structure
@@ -1117,7 +1104,7 @@ const entities = {
       restitution: 0.5,
     },
   },
-  // Turn an entity definition into a Box2D object and add to game world
+  // Turn an entity definition into a Planck.js body and add to game world
   create(entity) {
     const definition = entities.definitions[entity.name];
     debugLog("Definition is ", definition);
@@ -1166,7 +1153,7 @@ const entities = {
     }
   },
   // Draw the entity on the canvas
-  // The images are stretched to cover the 1px skin that Box2D adds to all entities
+  // The images are stretched to cover the 1px skin that Planck.js adds to all entities
   draw(entity, position, angle) {
     game.context.save();
     game.context.translate(
@@ -1233,103 +1220,62 @@ class Box2d {
   }
 
   init() {
-    const gravity = new b2Vec2(0, 9.8);
-    const allowSleep = true;
-    this.world = new b2World(gravity, allowSleep);
-    // Setup Debug draw
-    const debugContext = document
-      .getElementById("debugcanvas")
-      .getContext("2d");
-    const debugDraw = new b2DebugDraw();
-    debugDraw.SetSprite(debugContext);
-    debugDraw.SetDrawScale(this.scale);
-    debugDraw.SetFillAlpha(0.3);
-    debugDraw.SetLineThickness(1.0);
-    debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
-    this.world.SetDebugDraw(debugDraw);
-    // Add collision detection listeners
-    const listener = new Box2D.Dynamics.b2ContactListener();
+    this.world = new World(Vec2(0, 9.8));
+    // Collision damage: subtract the impact impulse from each body's health.
+    this.world.on("post-solve", this.handlePostSolve);
+  }
 
-    listener.PostSolve = function (contact, impulse) {
-      const body1 = contact.GetFixtureA().GetBody();
-      const body2 = contact.GetFixtureB().GetBody();
-      const entity1 = body1.GetUserData();
-      const entity2 = body2.GetUserData();
+  // post-solve handler. Kept as a method so it can be unit-tested directly.
+  handlePostSolve(contact, impulse) {
+    const entity1 = contact.getFixtureA().getBody().getUserData();
+    const entity2 = contact.getFixtureB().getBody().getUserData();
 
-      const impulseAlongNormal = Math.abs(impulse.normalImpulses[0]);
-      // Filter out tiny impulses
-      if (impulseAlongNormal > 5) {
-        if (entity1) {
-          if (entity1.health !== undefined) entity1.health -= impulseAlongNormal;
-          if (entity1.bounceSound) entity1.bounceSound.play();
-        }
-        if (entity2) {
-          if (entity2.health !== undefined) entity2.health -= impulseAlongNormal;
-          if (entity2.bounceSound) entity2.bounceSound.play();
-        }
+    const impulseAlongNormal = Math.abs(impulse.normalImpulses[0]);
+    // Filter out tiny impulses
+    if (impulseAlongNormal > 5) {
+      if (entity1) {
+        if (entity1.health !== undefined) entity1.health -= impulseAlongNormal;
+        if (entity1.bounceSound) entity1.bounceSound.play();
       }
-    };
-    this.world.SetContactListener(listener);
+      if (entity2) {
+        if (entity2.health !== undefined) entity2.health -= impulseAlongNormal;
+        if (entity2.bounceSound) entity2.bounceSound.play();
+      }
+    }
+  }
+
+  createBody(entity, shape, definition) {
+    const body = this.world.createBody({
+      type: entity.isStatic ? "static" : "dynamic",
+      position: Vec2(entity.x / this.scale, entity.y / this.scale),
+      angle: entity.angle ? (Math.PI * entity.angle) / 180 : 0,
+    });
+    body.setUserData(entity);
+    body.createFixture({
+      shape,
+      density: definition.density,
+      friction: definition.friction,
+      restitution: definition.restitution,
+    });
+    return body;
   }
 
   createRectangle(entity, definition) {
-    const bodyDef = new b2BodyDef();
-    if (entity.isStatic) {
-      bodyDef.type = b2Body.b2_staticBody;
-    } else {
-      bodyDef.type = b2Body.b2_dynamicBody;
-    }
-    bodyDef.position.x = entity.x / this.scale;
-    bodyDef.position.y = entity.y / this.scale;
-    if (entity.angle) {
-      bodyDef.angle = (Math.PI * entity.angle) / 180;
-    }
-    const fixtureDef = new b2FixtureDef();
-    fixtureDef.density = definition.density;
-    fixtureDef.friction = definition.friction;
-    fixtureDef.restitution = definition.restitution;
-    fixtureDef.shape = new b2PolygonShape();
-    fixtureDef.shape.SetAsBox(
+    const shape = new Box(
       entity.width / 2 / this.scale,
       entity.height / 2 / this.scale
     );
-    const body = this.world.CreateBody(bodyDef);
-    body.SetUserData(entity);
-    body.CreateFixture(fixtureDef);
-    return body;
+    return this.createBody(entity, shape, definition);
   }
 
   createCircle(entity, definition) {
-    debugLog("Creating Circle with ", entity, definition);
-    const bodyDef = new b2BodyDef();
-    if (entity.isStatic) {
-      bodyDef.type = b2Body.b2_staticBody;
-    } else {
-      bodyDef.type = b2Body.b2_dynamicBody;
-    }
-
-    bodyDef.position.x = entity.x / this.scale;
-    bodyDef.position.y = entity.y / this.scale;
-
-    if (entity.angle) {
-      bodyDef.angle = (Math.PI * entity.angle) / 180;
-    }
-    const fixtureDef = new b2FixtureDef();
-    fixtureDef.density = definition.density;
-    fixtureDef.friction = definition.friction;
-    fixtureDef.restitution = definition.restitution;
-    fixtureDef.shape = new b2CircleShape(entity.radius / this.scale);
-    debugLog("Circle fixture is ", fixtureDef);
-    const body = this.world.CreateBody(bodyDef);
-    body.SetUserData(entity);
-    body.CreateFixture(fixtureDef);
-    debugLog("Final Circle body is now ", body);
-    return body;
+    const shape = new Circle(entity.radius / this.scale);
+    return this.createBody(entity, shape, definition);
   }
 
   step(timeStep) {
     timeStep = timeStep <= 2 / 60 ? timeStep : 2 / 60;
-    this.world.Step(timeStep, this.velocityIterations, this.positionIterations);
+    this.world.step(timeStep, this.velocityIterations, this.positionIterations);
   }
 }
 

@@ -46,6 +46,6 @@ describe("entities.create", () => {
     box2d.init();
     const apple = { type: "hero", name: "apple", x: 50, y: 50 };
     entities.create(apple);
-    expect(box2d.world.bodies[0].GetUserData()).toBe(apple);
+    expect(box2d.world.bodies[0].getUserData()).toBe(apple);
   });
 });

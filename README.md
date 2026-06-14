@@ -50,7 +50,7 @@ npm run lint   # ESLint over js/ and the tests
 npm test       # Vitest unit tests (jsdom)
 ```
 
-The tests load `js/game.js` unmodified inside a faked Box2D + DOM environment
+The tests load `js/game.js` unmodified inside a faked Planck.js + DOM environment
 (see `test/helpers/loadGame.js`) and cover level-data integrity, level
 loading, scoring/high-score persistence, the asset loader, camera panning, and
 collision damage. Both commands run automatically on every push and pull

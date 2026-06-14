@@ -1,4 +1,4 @@
-const { World, Vec2, Box, Circle } = planck;
+import { World, Vec2, Box, Circle } from "./planck.esm.js";
 
 // Debug flag used to control logging
 const DEBUG = false;
@@ -1280,3 +1280,7 @@ class Box2d {
 }
 
 const box2d = new Box2d();
+
+// Exported only for the test harness; the browser entry point self-wires via
+// the DOMContentLoaded listener above and needs nothing from these.
+export { game, levels, loader, mouse, entities, box2d, Box2d };

@@ -46,26 +46,30 @@ level-data integrity, level loading, scoring/high-score persistence, the asset
 loader, camera panning, and collision damage. Both run in CI
 ([.github/workflows/ci.yml](.github/workflows/ci.yml)) on every push and PR.
 The harness loads the source through `new Function(...)` so each test gets an
-isolated instance; if you add a new top-level `const` module object to
-game.js, add it to the harness's return list to test it. Manual browser
+isolated instance (rather than `import()`, which would cache one shared
+instance); it rewrites game.js's `import`/`export` lines so the source runs
+inside the function wrapper. If you add a new top-level `const` module object
+to game.js, add it to the harness's return list to test it. Manual browser
 walkthrough is still the way to verify rendering and input.
 
 ## Code layout
 
 ```
-index.html                 entry point — loads Planck.js, then game.js
+index.html                 entry point — loads game.js as an ES module
 css/styles.css             all styling (~100 lines)
-js/game.js                 ALL game code lives here (~1,300 lines)
-js/planck.min.js           Planck.js physics engine (vendored, do not edit)
+js/game.js                 ALL game code lives here (~1,300 lines), ES module
+js/planck.esm.js           Planck.js physics engine, ESM build (vendored, do not edit)
 images/entities/           sprite per entity name (apple.png, burger.png, ...)
 images/backgrounds/        level backgrounds and foregrounds
 images/icons/              UI buttons (play, settings, sound, prev, next, ...)
 audio/                     sound effects + music, each as paired .mp3/.ogg
 ```
 
-Everything in [js/game.js](js/game.js) is organized as module-pattern objects
-on top-level `const` bindings — no ES modules, no classes except `Box2d`.
-The objects are loaded in this order at the bottom of the file:
+[js/game.js](js/game.js) is a single ES module (`<script type="module">`). It
+imports Planck.js at the top, organizes the game as module-pattern objects on
+top-level `const` bindings (no classes except `Box2d`), and `export`s those
+objects at the bottom for the test harness. The objects are defined in this
+order:
 
 - `game` — top-level state machine, rendering loop, score, music ([js/game.js:47](js/game.js#L47))
 - `levels` — level data (inline array) and loader ([js/game.js:476](js/game.js#L476))
@@ -147,11 +151,14 @@ based on browser support).
 - High scores are persisted per level in `localStorage` under
   `highscore-level-<index>`. To reset while testing, clear site data or run
   `localStorage.clear()` in the devtools console.
-- Planck.js is exposed as the global `planck` by the vendored
-  `js/planck.min.js`; game.js pulls `World`, `Vec2`, `Box`, and `Circle` off it
-  at the top of the file. Its API is camelCase (`world.createBody`,
+- game.js `import`s `World`, `Vec2`, `Box`, and `Circle` from the vendored ESM
+  build `js/planck.esm.js`. Planck's API is camelCase (`world.createBody`,
   `body.getPosition`, `world.on("post-solve", ...)`) — unlike the old
   PascalCase Box2dWeb API.
+- Because game.js is loaded with `type="module"`, its top-level `const`s are
+  module-scoped — they are not visible as globals (e.g. `game`/`box2d` are not
+  on `window`). The page must still be served over HTTP; native modules won't
+  load over `file://`.
 
 ## Conventions
 

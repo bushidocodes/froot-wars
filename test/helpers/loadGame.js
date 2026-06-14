@@ -1,11 +1,11 @@
 // Test harness for js/game.js.
 //
 // game.js is a browser script: it declares everything on top-level `const`
-// bindings (game, levels, loader, mouse, entities, box2d) and expects Box2D,
+// bindings (game, levels, loader, mouse, entities, box2d) and expects planck,
 // the DOM, localStorage, Image and Audio to exist as globals. Rather than
 // refactor the source to add module exports, we load it verbatim inside a
 // function wrapper that captures those bindings and returns them, after
-// installing a faithful-enough fake Box2D and a DOM fixture.
+// installing a faithful-enough fake Planck.js and a DOM fixture.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -17,135 +17,101 @@ const GAME_SRC = fs.readFileSync(
   "utf8",
 );
 
-// --- Fake Box2D -----------------------------------------------------------
+// --- Fake Planck.js -------------------------------------------------------
 // Only the surface game.js actually touches is implemented. The world keeps
-// a real singly-linked body list so GetBodyList()/GetNext() traversal — which
+// a real singly-linked body list so getBodyList()/getNext() traversal — which
 // the scoring and hero/villain counting code relies on — behaves correctly.
 
 function makeBody(bodyDef) {
   return {
     _def: bodyDef,
     _next: null,
-    _userData: null,
-    SetUserData(d) {
+    _userData: bodyDef.userData ?? null,
+    setUserData(d) {
       this._userData = d;
     },
-    GetUserData() {
+    getUserData() {
       return this._userData;
     },
-    CreateFixture() {},
-    GetPosition() {
+    createFixture() {},
+    getPosition() {
       return { x: bodyDef.position.x, y: bodyDef.position.y };
     },
-    GetAngle() {
+    getAngle() {
       return bodyDef.angle || 0;
     },
-    GetNext() {
+    getNext() {
       return this._next;
     },
+    setPosition(p) {
+      bodyDef.position = { x: p.x, y: p.y };
+    },
+    setLinearVelocity() {},
+    setAngularVelocity() {},
+    setAwake() {},
+    isAwake() {
+      return false;
+    },
+    getWorldCenter() {
+      return { x: bodyDef.position.x, y: bodyDef.position.y };
+    },
+    applyLinearImpulse() {},
   };
 }
 
 class MockWorld {
-  constructor(gravity, allowSleep) {
+  constructor(gravity) {
     this.gravity = gravity;
-    this.allowSleep = allowSleep;
     this.bodies = [];
+    this.listeners = {};
   }
   _relink() {
     for (let i = 0; i < this.bodies.length; i++) {
       this.bodies[i]._next = this.bodies[i + 1] || null;
     }
   }
-  CreateBody(bodyDef) {
+  createBody(bodyDef) {
     const body = makeBody(bodyDef);
     this.bodies.push(body);
     this._relink();
     return body;
   }
-  GetBodyList() {
+  getBodyList() {
     return this.bodies[0] || null;
   }
-  DestroyBody(target) {
+  destroyBody(target) {
     const i = this.bodies.indexOf(target);
     if (i !== -1) {
       this.bodies.splice(i, 1);
       this._relink();
     }
   }
-  SetDebugDraw() {}
-  SetContactListener(listener) {
-    this.contactListener = listener;
+  on(event, fn) {
+    this.listeners[event] = fn;
   }
-  Step(timeStep) {
+  off(event) {
+    delete this.listeners[event];
+  }
+  step(timeStep) {
     this.stepped = (this.stepped || 0) + 1;
     this.lastTimeStep = timeStep;
   }
-  DrawDebugData() {}
 }
 
-function makeBox2D() {
-  class b2DebugDraw {
-    SetSprite() {}
-    SetDrawScale() {}
-    SetFillAlpha() {}
-    SetLineThickness() {}
-    SetFlags() {}
-  }
-  b2DebugDraw.e_shapeBit = 0x0001;
-  b2DebugDraw.e_jointBit = 0x0002;
-
+function makePlanck() {
   return {
-    Common: {
-      Math: {
-        b2Vec2: class {
-          constructor(x, y) {
-            this.x = x;
-            this.y = y;
-          }
-          Set(x, y) {
-            this.x = x;
-            this.y = y;
-          }
-        },
-      },
+    World: MockWorld,
+    Vec2: (x, y) => ({ x, y }),
+    Box: class {
+      constructor(halfWidth, halfHeight) {
+        this.halfWidth = halfWidth;
+        this.halfHeight = halfHeight;
+      }
     },
-    Collision: {
-      Shapes: {
-        b2PolygonShape: class {
-          SetAsBox(halfWidth, halfHeight) {
-            this.halfWidth = halfWidth;
-            this.halfHeight = halfHeight;
-          }
-        },
-        b2CircleShape: class {
-          constructor(radius) {
-            this.radius = radius;
-          }
-        },
-      },
-    },
-    Dynamics: {
-      b2BodyDef: class {
-        constructor() {
-          this.position = { x: 0, y: 0 };
-          this.type = null;
-          this.angle = 0;
-        }
-      },
-      b2Body: { b2_staticBody: "static", b2_dynamicBody: "dynamic" },
-      b2Fixture: class {},
-      b2FixtureDef: class {
-        constructor() {
-          this.density = 0;
-          this.friction = 0;
-          this.restitution = 0;
-          this.shape = null;
-        }
-      },
-      b2World: MockWorld,
-      b2DebugDraw,
-      b2ContactListener: class {},
+    Circle: class {
+      constructor(radius) {
+        this.radius = radius;
+      }
     },
   };
 }
@@ -244,7 +210,7 @@ function installFixture() {
 export function loadGame() {
   installFixture();
 
-  globalThis.Box2D = makeBox2D();
+  globalThis.planck = makePlanck();
   globalThis.Image = FakeImage;
   globalThis.Audio = FakeAudio;
   window.requestAnimationFrame = () => 0;

@@ -2,17 +2,12 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-  // Vendored Box2D and dependencies are not ours to lint.
+  // Vendored Planck.js is not ours to lint.
   {
-    ignores: [
-      "js/Box2dWeb-2.1.a.3.min.js",
-      "js/box2d.js",
-      "node_modules/**",
-      "coverage/**",
-    ],
+    ignores: ["js/planck.min.js", "node_modules/**", "coverage/**"],
   },
 
-  // Game source: browser environment, Box2D provided as a global by index.html.
+  // Game source: browser environment, planck provided as a global by index.html.
   {
     files: ["js/**/*.js"],
     ...js.configs.recommended,
@@ -21,7 +16,7 @@ export default [
       sourceType: "script",
       globals: {
         ...globals.browser,
-        Box2D: "readonly",
+        planck: "readonly",
       },
     },
     rules: {
@@ -29,9 +24,6 @@ export default [
       "no-unused-vars": [
         "error",
         {
-          // Box2D type aliases at the top of game.js are kept as a complete
-          // set even when a build doesn't reference every one.
-          varsIgnorePattern: "^b2",
           // Event handlers keep their `ev` parameter for signature clarity.
           args: "none",
         },

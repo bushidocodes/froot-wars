@@ -57,8 +57,8 @@ describe("game.mouseOnCurrentHero", () => {
   function withHero(game, box2d) {
     game.offsetLeft = 0;
     game.currentHero = {
-      GetPosition: () => ({ x: 100 / box2d.scale, y: 200 / box2d.scale }),
-      GetUserData: () => ({ radius: 20 }),
+      getPosition: () => ({ x: 100 / box2d.scale, y: 200 / box2d.scale }),
+      getUserData: () => ({ radius: 20 }),
     };
   }
 

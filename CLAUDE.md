@@ -7,7 +7,9 @@ Guidance for Claude Code (and other coding agents) working in this repo.
 Froot Wars is a browser game in the spirit of Angry Birds: a slingshot launches
 fruit at junk-food villains stacked on wood and glass blocks. It's a static
 site — plain HTML, CSS, and JavaScript, no build step, no package manager, no
-framework. All gameplay runs client-side using the Box2D physics engine.
+framework. All gameplay runs client-side using the
+[Planck.js](https://piqnt.com/planck.js/) physics engine (a JavaScript rewrite
+of Box2D).
 
 ## Running the game
 
@@ -38,7 +40,7 @@ npm test    # Vitest, jsdom environment
 npm run lint
 ```
 
-The tests load [js/game.js](js/game.js) verbatim inside a faked Box2D + DOM
+The tests load [js/game.js](js/game.js) verbatim inside a faked Planck.js + DOM
 harness ([test/helpers/loadGame.js](test/helpers/loadGame.js)) and cover
 level-data integrity, level loading, scoring/high-score persistence, the asset
 loader, camera panning, and collision damage. Both run in CI
@@ -51,11 +53,10 @@ walkthrough is still the way to verify rendering and input.
 ## Code layout
 
 ```
-index.html                 entry point — loads Box2D, then game.js
+index.html                 entry point — loads Planck.js, then game.js
 css/styles.css             all styling (~100 lines)
-js/game.js                 ALL game code lives here (~1,360 lines)
-js/Box2dWeb-2.1.a.3.min.js Box2D physics engine (vendored, do not edit)
-js/box2d.js                unminified Box2D, not loaded by index.html
+js/game.js                 ALL game code lives here (~1,300 lines)
+js/planck.min.js           Planck.js physics engine (vendored, do not edit)
 images/entities/           sprite per entity name (apple.png, burger.png, ...)
 images/backgrounds/        level backgrounds and foregrounds
 images/icons/              UI buttons (play, settings, sound, prev, next, ...)
@@ -71,7 +72,7 @@ The objects are loaded in this order at the bottom of the file:
 - `loader` — image/audio asset loader with `.ogg`/`.mp3` fallback ([js/game.js:903](js/game.js#L903))
 - `mouse` — mouse + touch input, exposes `mouse.x`, `mouse.y`, `mouse.down`, `mouse.dragging` ([js/game.js:971](js/game.js#L971))
 - `entities` — entity definitions (physics + shape) and draw routines ([js/game.js:1029](js/game.js#L1029))
-- `Box2d` class instantiated as `box2d` — physics world, body factories, contact listener ([js/game.js:1247](js/game.js#L1247))
+- `Box2d` class instantiated as `box2d` — wraps the Planck.js world, body factories, and the `post-solve` collision handler ([js/game.js:1218](js/game.js#L1218))
 
 `document.addEventListener("DOMContentLoaded", ...)` at the top wires up DOM
 buttons and calls `game.init()`, which in turn initializes `levels`, `loader`,
@@ -92,16 +93,16 @@ level-success    → all villains destroyed; pan back to slingshot
 level-failure    → out of heroes but villains remain
 ```
 
-A villain is destroyed when its `health` (from collision damage in
-`PostSolve`) drops to 0, or when it leaves the world bounds. Heroes that fall
-asleep, leave the world, or time out after 10 seconds trigger
-`load-next-hero`.
+A villain is destroyed when its `health` (from collision damage in the world's
+`post-solve` handler, `Box2d.handlePostSolve`) drops to 0, or when it leaves the
+world bounds. Heroes that fall asleep, leave the world, or time out after 10
+seconds trigger `load-next-hero`.
 
 ## Coordinates and scale
 
-Box2D works in meters; the canvas is in pixels. `box2d.scale = 30` converts
-between them — multiply Box2D positions by `box2d.scale` to get pixel
-coordinates, divide pixel coordinates by `box2d.scale` to feed Box2D. The
+Planck.js works in meters; the canvas is in pixels. `box2d.scale = 30` converts
+between them — multiply physics positions by `box2d.scale` to get pixel
+coordinates, divide pixel coordinates by `box2d.scale` to feed the physics. The
 canvas is 640×480; level foregrounds are wider (~1000px) and the camera pans
 horizontally via `game.offsetLeft`.
 
@@ -132,11 +133,8 @@ based on browser support).
 
 ## Things that have caught people out
 
-- The `DEBUG` flag at [js/game.js:13](js/game.js#L13) gates `debugLog`. Leave
+- The `DEBUG` flag at [js/game.js:4](js/game.js#L4) gates `debugLog`. Leave
   it `false` in commits — flipping it on floods the console.
-- There's a `debugcanvas` in `index.html` (`display:none`) that Box2D draws
-  collision shapes onto. Don't remove it; `Box2d.init()` requires the element
-  to exist.
 - `mousedownhandler` calls `ev.preventDefault()` directly on the event (not
   `ev.originalEvent.preventDefault()` — that was an old bug, see commit
   0581091).
@@ -149,9 +147,11 @@ based on browser support).
 - High scores are persisted per level in `localStorage` under
   `highscore-level-<index>`. To reset while testing, clear site data or run
   `localStorage.clear()` in the devtools console.
-- `js/box2d.js` is the unminified Box2D source kept for reference. It is NOT
-  loaded by `index.html` — only `Box2dWeb-2.1.a.3.min.js` is. Editing
-  `box2d.js` has no effect on the running game.
+- Planck.js is exposed as the global `planck` by the vendored
+  `js/planck.min.js`; game.js pulls `World`, `Vec2`, `Box`, and `Circle` off it
+  at the top of the file. Its API is camelCase (`world.createBody`,
+  `body.getPosition`, `world.on("post-solve", ...)`) — unlike the old
+  PascalCase Box2dWeb API.
 
 ## Conventions
 

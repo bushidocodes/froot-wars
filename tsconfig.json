@@ -1,0 +1,31 @@
+{
+  // Type-checks the game source in place via JSDoc. There is no emit and no
+  // build step: the browser still loads js/game.js verbatim. `npm run typecheck`
+  // runs `tsc`, which reads this config and only reports errors.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+
+    "strict": true,
+    // The game reaches for DOM nodes it knows exist (they are declared in
+    // index.html and the test fixture) without null guards, e.g.
+    // document.getElementById("score").innerHTML. Enforcing strict null checks
+    // would demand guards or casts on every such access and change the shipped
+    // file. The rest of strict mode (noImplicitAny, strictFunctionTypes, ...)
+    // stays on and still catches real mistakes.
+    "strictNullChecks": false,
+
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  // Only our source is checked. The vendored, minified Planck build is typed by
+  // its sibling planck.esm.d.ts instead of being parsed.
+  "include": ["js/game.js"],
+  "exclude": ["node_modules", "js/planck.esm.js"]
+}

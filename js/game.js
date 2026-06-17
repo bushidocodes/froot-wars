@@ -1,7 +1,65 @@
+// @ts-check
 import { World, Vec2, Box, Circle } from "./planck.esm.js";
+
+/** @typedef {import("./planck.esm.js").Body} Body */
+/** @typedef {import("./planck.esm.js").Contact} Contact */
+/** @typedef {import("./planck.esm.js").ContactImpulse} ContactImpulse */
+/** @typedef {import("./planck.esm.js").Shape} Shape */
+
+/**
+ * A physics-backed game object: a fruit hero, a junk-food villain, a wood/glass
+ * block, or static ground. Level data supplies the first few fields by hand;
+ * entities.create() fills in the rest from the matching entity definition.
+ * @typedef {Object} Entity
+ * @property {"ground" | "block" | "hero" | "villain"} type
+ * @property {string} name
+ * @property {number} x
+ * @property {number} y
+ * @property {number} [width]
+ * @property {number} [height]
+ * @property {number} [radius]
+ * @property {number} [angle]
+ * @property {boolean} [isStatic]
+ * @property {number} [calories] score awarded when a villain is destroyed
+ * @property {number} [health] remaining health; drops via collision damage
+ * @property {number} [fullHealth]
+ * @property {"circle" | "rectangle"} [shape]
+ * @property {HTMLImageElement} [sprite]
+ * @property {HTMLAudioElement} [breakSound]
+ * @property {HTMLAudioElement} [bounceSound]
+ */
+
+/**
+ * The physics and shape parameters shared by every entity of a given name.
+ * @typedef {Object} EntityDefinition
+ * @property {"circle" | "rectangle"} [shape]
+ * @property {number} [fullHealth]
+ * @property {number} [radius]
+ * @property {number} [width]
+ * @property {number} [height]
+ * @property {number} density
+ * @property {number} friction
+ * @property {number} restitution
+ */
+
+/**
+ * @typedef {Object} Level
+ * @property {string} foreground
+ * @property {string} background
+ * @property {Entity[]} entities
+ */
+
+/**
+ * The level currently loaded, plus its lazily-loaded background/foreground art.
+ * @typedef {Object} CurrentLevel
+ * @property {number} number
+ * @property {HTMLImageElement} [backgroundImage]
+ * @property {HTMLImageElement} [foregroundImage]
+ */
 
 // Debug flag used to control logging
 const DEBUG = false;
+/** @param {...unknown} args */
 const debugLog = (...args) => {
   if (DEBUG) console.log(...args);
 };
@@ -60,6 +118,39 @@ const game = {
   // Fire Timer to prevent weird friction stuff from making game unplayable
   fireTimer: 0,
 
+  // Properties below are populated during init()/load()/play and declared here
+  // so the type checker knows their shapes. They are not read before assignment.
+  /** @type {HTMLCanvasElement} */
+  canvas: null,
+  /** @type {CanvasRenderingContext2D} */
+  context: null,
+  /** @type {CurrentLevel} */
+  currentLevel: null,
+  /** @type {Body[]} */
+  heroes: [],
+  /** @type {Body[]} */
+  villains: [],
+  /** @type {Body | undefined} */
+  currentHero: undefined,
+  /** @type {Body | undefined} */
+  hero: undefined,
+  ended: false,
+  animationFrame: 0,
+  /** @type {number | undefined} */
+  lastUpdateTime: undefined,
+  /** @type {HTMLImageElement} */
+  slingshotImage: null,
+  /** @type {HTMLImageElement} */
+  slingshotFrontImage: null,
+  /** @type {HTMLAudioElement} */
+  backgroundMusic: null,
+  /** @type {HTMLAudioElement} */
+  bounceSound: null,
+  /** @type {HTMLAudioElement} */
+  slingshotReleasedSound: null,
+  /** @type {Record<string, HTMLAudioElement>} */
+  breakSound: null,
+
   init() {
     //Initialize objects
     levels.init();
@@ -75,24 +166,32 @@ const game = {
     };
 
     // Hide the game and show the start screen
-    document.querySelectorAll(".gamelayer").forEach((el) => {
+    /** @type {NodeListOf<HTMLElement>} */ (
+      document.querySelectorAll(".gamelayer")
+    ).forEach((el) => {
       el.style.display = "none";
     });
     document.getElementById("gamestartscreen").style.display = "block";
 
     // Save canvas and context to game object
-    game.canvas = document.getElementById("gamecanvas");
+    game.canvas = /** @type {HTMLCanvasElement} */ (
+      document.getElementById("gamecanvas")
+    );
     game.context = game.canvas.getContext("2d");
   },
   showLevelScreen() {
-    document.querySelectorAll(".gamelayer").forEach((el) => {
+    /** @type {NodeListOf<HTMLElement>} */ (
+      document.querySelectorAll(".gamelayer")
+    ).forEach((el) => {
       el.style.display = "none";
     });
     document.getElementById("levelselectscreen").style.display = "block";
   },
 
   start() {
-    document.querySelectorAll(".gamelayer").forEach((el) => {
+    /** @type {NodeListOf<HTMLElement>} */ (
+      document.querySelectorAll(".gamelayer")
+    ).forEach((el) => {
       el.style.display = "none";
     });
     document.getElementById("gamecanvas").style.display = "block";
@@ -106,7 +205,11 @@ const game = {
     game.animationFrame = window.requestAnimationFrame(game.animate);
   },
 
-  // Pan the screen to center on newCenter
+  /**
+   * Pan the screen to center on newCenter.
+   * @param {number} newCenter
+   * @returns {boolean} true once the camera has settled on the target or a bound
+   */
   panTo(newCenter) {
     if (
       // Check to see if the newCenter is within a quarter of the game screen in either direction and if the offset is within min and max bounds
@@ -138,6 +241,7 @@ const game = {
     game.heroes = [];
     game.villains = [];
     for (let body = box2d.world.getBodyList(); body; body = body.getNext()) {
+      /** @type {Entity | null} */
       const entity = body.getUserData();
       if (entity) {
         if (entity.type === "hero") {
@@ -285,6 +389,7 @@ const game = {
     }
   },
 
+  /** @param {number} timestamp */
   animate(timestamp) {
     // Animate the background
     game.handlePanning();
@@ -354,6 +459,7 @@ const game = {
     let body = box2d.world.getBodyList();
     while (body) {
       const nextBody = body.getNext();
+      /** @type {Entity | null} */
       const entity = body.getUserData();
       if (entity) {
         const entityX = body.getPosition().x * box2d.scale;
@@ -388,7 +494,7 @@ const game = {
       const previous = parseInt(localStorage.getItem(key) || "0", 10);
       const isNewRecord = game.score > previous;
       if (isNewRecord) {
-        localStorage.setItem(key, game.score);
+        localStorage.setItem(key, String(game.score));
       }
       const recordNote = isNewRecord ? " New best!" : ` Best: ${previous}`;
       if (game.currentLevel.number < levels.data.length - 1) {
@@ -466,18 +572,24 @@ const game = {
   },
 
   startBackgroundMusic() {
-    const toggleImage = document.getElementById("togglemusic");
+    const toggleImage = /** @type {HTMLImageElement} */ (
+      document.getElementById("togglemusic")
+    );
     game.backgroundMusic.play();
     toggleImage.src = "images/icons/sound.png";
   },
   stopBackgroundMusic() {
-    const toggleImage = document.getElementById("togglemusic");
+    const toggleImage = /** @type {HTMLImageElement} */ (
+      document.getElementById("togglemusic")
+    );
     toggleImage.src = "images/icons/nosound.png";
     game.backgroundMusic.pause();
     game.backgroundMusic.currentTime = 0; // make sure to start at beginning of song
   },
   toggleBackgroundMusic() {
-    const toggleImage = document.getElementById("togglemusic");
+    const toggleImage = /** @type {HTMLImageElement} */ (
+      document.getElementById("togglemusic")
+    );
     if (game.backgroundMusic.paused) {
       game.backgroundMusic.play();
       toggleImage.src = "images/icons/sound.png";
@@ -489,6 +601,7 @@ const game = {
 };
 
 const levels = {
+  /** @type {Level[]} */
   data: [
     // Level One
     {
@@ -848,13 +961,16 @@ const levels = {
     levelScreen.innerHTML = html;
     levelScreen.querySelectorAll("input").forEach((input) => {
       input.addEventListener("click", function () {
-        levels.load(this.value - 1);
+        levels.load(Number(input.value) - 1);
         levelScreen.style.display = "none";
       });
     });
   },
 
-  // Load data and images for a selected level
+  /**
+   * Load data and images for a selected level.
+   * @param {number} number
+   */
   load(number) {
     debugLog("load called for ", number);
     box2d.init();
@@ -897,7 +1013,13 @@ const loader = {
   loadedCount: 0,
   totalCount: 0,
   soundFileExtn: ".mp3",
+  /** @type {(() => void) | undefined} called once every queued asset has loaded */
+  onload: undefined,
 
+  /**
+   * @param {string} url
+   * @returns {HTMLImageElement}
+   */
   loadImage(url) {
     this.totalCount++;
     this.loaded = false;
@@ -908,6 +1030,10 @@ const loader = {
     return image;
   },
 
+  /**
+   * @param {string} url
+   * @returns {HTMLAudioElement}
+   */
   loadSound(url) {
     this.totalCount++;
     this.loaded = false;
@@ -942,6 +1068,9 @@ const mouse = {
   x: 0,
   y: 0,
   down: false,
+  dragging: false,
+  downX: 0,
+  downY: 0,
   init() {
     // Register mouse events with our mouse event handlers
     const canvas = document.getElementById("gamecanvas");
@@ -955,6 +1084,7 @@ const mouse = {
     canvas.addEventListener("touchend", mouse.mouseuphandler);
   },
   // Handles general mouse movement on the canvas
+  /** @param {MouseEvent} ev */
   mousemovehandler(ev) {
     // Translate window coordinates to canvas coordinates
     const rect = document.getElementById("gamecanvas").getBoundingClientRect();
@@ -965,6 +1095,7 @@ const mouse = {
     }
   },
   // Handles mouse clicks and drags
+  /** @param {MouseEvent} ev */
   mousedownhandler(ev) {
     mouse.down = true;
     mouse.downX = mouse.x;
@@ -972,10 +1103,12 @@ const mouse = {
     ev.preventDefault();
   },
   // Makes sure that clicks and drags are cut off when the mouse cursor leaves the canvas
+  /** @param {Event} ev */
   mouseuphandler(ev) {
     mouse.down = false;
     mouse.dragging = false;
   },
+  /** @param {TouchEvent} ev */
   touchmovehandler(ev) {
     ev.preventDefault();
     const touch = ev.touches[0];
@@ -986,6 +1119,7 @@ const mouse = {
       mouse.dragging = true;
     }
   },
+  /** @param {TouchEvent} ev */
   touchstarthandler(ev) {
     ev.preventDefault();
     mouse.down = true;
@@ -997,6 +1131,7 @@ const mouse = {
 };
 
 const entities = {
+  /** @type {Record<string, EntityDefinition>} */
   definitions: {
     glass: {
       fullHealth: 100,
@@ -1105,6 +1240,7 @@ const entities = {
     },
   },
   // Turn an entity definition into a Planck.js body and add to game world
+  /** @param {Entity} entity */
   create(entity) {
     const definition = entities.definitions[entity.name];
     debugLog("Definition is ", definition);
@@ -1154,6 +1290,11 @@ const entities = {
   },
   // Draw the entity on the canvas
   // The images are stretched to cover the 1px skin that Planck.js adds to all entities
+  /**
+   * @param {Entity} entity
+   * @param {Vec2} position
+   * @param {number} angle
+   */
   draw(entity, position, angle) {
     game.context.save();
     game.context.translate(
@@ -1216,6 +1357,7 @@ class Box2d {
     this.scale = 30;
     this.velocityIterations = 8;
     this.positionIterations = 3;
+    /** @type {World} */
     this.world = null;
   }
 
@@ -1226,8 +1368,14 @@ class Box2d {
   }
 
   // post-solve handler. Kept as a method so it can be unit-tested directly.
+  /**
+   * @param {Contact} contact
+   * @param {ContactImpulse} impulse
+   */
   handlePostSolve(contact, impulse) {
+    /** @type {Entity | null} */
     const entity1 = contact.getFixtureA().getBody().getUserData();
+    /** @type {Entity | null} */
     const entity2 = contact.getFixtureB().getBody().getUserData();
 
     const impulseAlongNormal = Math.abs(impulse.normalImpulses[0]);
@@ -1244,6 +1392,12 @@ class Box2d {
     }
   }
 
+  /**
+   * @param {Entity} entity
+   * @param {Shape} shape
+   * @param {EntityDefinition} definition
+   * @returns {Body}
+   */
   createBody(entity, shape, definition) {
     const body = this.world.createBody({
       type: entity.isStatic ? "static" : "dynamic",
@@ -1260,6 +1414,11 @@ class Box2d {
     return body;
   }
 
+  /**
+   * @param {Entity} entity
+   * @param {EntityDefinition} definition
+   * @returns {Body}
+   */
   createRectangle(entity, definition) {
     const shape = new Box(
       entity.width / 2 / this.scale,
@@ -1268,11 +1427,17 @@ class Box2d {
     return this.createBody(entity, shape, definition);
   }
 
+  /**
+   * @param {Entity} entity
+   * @param {EntityDefinition} definition
+   * @returns {Body}
+   */
   createCircle(entity, definition) {
     const shape = new Circle(entity.radius / this.scale);
     return this.createBody(entity, shape, definition);
   }
 
+  /** @param {number} timeStep */
   step(timeStep) {
     timeStep = timeStep <= 2 / 60 ? timeStep : 2 / 60;
     this.world.step(timeStep, this.velocityIterations, this.positionIterations);

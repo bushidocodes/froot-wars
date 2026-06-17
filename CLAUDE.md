@@ -29,16 +29,31 @@ change, manually walk through: main menu → level select → play one level →
 fire a hero → confirm score updates → restart. Check the browser console for
 errors.
 
-## Tests and linting
+## Tests, linting, and type-checking
 
-There is a Vitest unit-test suite and ESLint config (dev-only; the game still
-ships with no build step and runs straight from the static files). Install dev
-dependencies once with `npm install`, then:
+There is a Vitest unit-test suite, an ESLint config, and TypeScript type-checking
+(all dev-only; the game still ships with no build step and runs straight from the
+static files). Install dev dependencies once with `npm install`, then:
 
 ```sh
-npm test    # Vitest, jsdom environment
+npm test         # Vitest, jsdom environment
 npm run lint
+npm run typecheck # tsc --noEmit over the JSDoc-typed source
 ```
+
+The source is plain JavaScript type-checked in place: [js/game.js](js/game.js)
+opens with `// @ts-check`, its types live in JSDoc comments (`@typedef`,
+`@param`, `@type`), and [tsconfig.json](tsconfig.json) runs `tsc` with
+`checkJs`/`noEmit` — there is **no emit and no compile step**. The browser loads
+`js/game.js` unchanged. The vendored Planck.js engine is untyped, so a thin
+hand-written subset of its API lives in
+[js/planck.esm.d.ts](js/planck.esm.d.ts); extend it if you start calling a
+Planck method the game doesn't use yet. `strictNullChecks` is intentionally off
+(see the comment in tsconfig.json) because the game reaches for
+`getElementById` nodes it knows exist without null guards. When you add a field
+that's assigned after the object literal (e.g. a new `game.*` property set in
+`init()`), declare it on the literal with a `/** @type {...} */` so the checker
+knows its shape.
 
 The tests load [js/game.js](js/game.js) verbatim inside a faked Planck.js + DOM
 harness ([test/helpers/loadGame.js](test/helpers/loadGame.js)) and cover
@@ -57,8 +72,10 @@ walkthrough is still the way to verify rendering and input.
 ```
 index.html                 entry point — loads game.js as an ES module
 css/styles.css             all styling (~100 lines)
-js/game.js                 ALL game code lives here (~1,300 lines), ES module
+js/game.js                 ALL game code lives here (~1,300 lines), ES module, JSDoc-typed
 js/planck.esm.js           Planck.js physics engine, ESM build (vendored, do not edit)
+js/planck.esm.d.ts         hand-written types for the subset of Planck.js the game uses
+tsconfig.json              type-check config (checkJs/noEmit; no build output)
 images/entities/           sprite per entity name (apple.png, burger.png, ...)
 images/backgrounds/        level backgrounds and foregrounds
 images/icons/              UI buttons (play, settings, sound, prev, next, ...)

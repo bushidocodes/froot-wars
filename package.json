@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A browser game in the spirit of Angry Birds, built on Planck.js.",
   "private": true,
+  "packageManager": "pnpm@11.5.0",
   "type": "module",
   "scripts": {
     "lint": "eslint .",

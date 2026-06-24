@@ -238,19 +238,15 @@ const game = {
   },
 
   countHeroesAndVillains() {
-    game.heroes = [];
-    game.villains = [];
-    for (let body = box2d.world.getBodyList(); body; body = body.getNext()) {
-      /** @type {Entity | null} */
-      const entity = body.getUserData();
-      if (entity) {
-        if (entity.type === "hero") {
-          game.heroes.push(body);
-        } else if (entity.type === "villain") {
-          game.villains.push(body);
-        }
-      }
-    }
+    const bodiesWithEntity = Iterator.from(iterBodies())
+      .filter(b => b.getUserData() != null)
+      .toArray();
+    const { hero = [], villain = [] } = Object.groupBy(
+      bodiesWithEntity,
+      b => b.getUserData().type
+    );
+    game.heroes = hero;
+    game.villains = villain;
   },
 
   // if the distance between the mouse pointer and the center of the hero is smaller than the radius, the mouse is hovering on the hero
@@ -454,11 +450,9 @@ const game = {
     }
   },
   drawAllBodies() {
-    // Save next pointer before any destroyBody call — destroying a body unlinks
-    // it from the list, making GetNext() on the destroyed node undefined behavior.
-    let body = box2d.world.getBodyList();
-    while (body) {
-      const nextBody = body.getNext();
+    // Snapshot the list before any destroyBody call — destroying a body unlinks
+    // it from the list, making getNext() on the destroyed node undefined behavior.
+    for (const body of Iterator.from(iterBodies()).toArray()) {
       /** @type {Entity | null} */
       const entity = body.getUserData();
       if (entity) {
@@ -476,14 +470,13 @@ const game = {
           box2d.world.destroyBody(body);
           if (entity.type === "villain") {
             game.score += entity.calories;
-            document.getElementById("score").innerHTML = "Score: " + game.score;
+            document.getElementById("score").innerHTML = `Score: ${game.score}`;
           }
           if (entity.breakSound) entity.breakSound.play();
         } else {
           entities.draw(entity, body.getPosition(), body.getAngle());
         }
       }
-      body = nextBody;
     }
   },
   showEndingScreen() {
@@ -953,10 +946,9 @@ const levels = {
     },
   ],
   init() {
-    let html = "";
-    levels.data.forEach((level, index) => {
-      html += `<input type='button' value=${index + 1}>`;
-    });
+    const html = levels.data
+      .map((_, index) => `<input type='button' value=${index + 1}>`)
+      .join("");
     const levelScreen = document.getElementById("levelselectscreen");
     levelScreen.innerHTML = html;
     levelScreen.querySelectorAll("input").forEach((input) => {
@@ -982,7 +974,7 @@ const levels = {
       number: number,
     };
     game.score = 0;
-    document.getElementById("score").innerHTML = "Score: " + game.score;
+    document.getElementById("score").innerHTML = `Score: ${game.score}`;
     const level = levels.data[number];
     game.currentLevel.backgroundImage = loader.loadImage(
       "images/backgrounds/" + level.background + ".png"
@@ -1051,7 +1043,7 @@ const loader = {
   itemLoaded() {
     loader.loadedCount++;
     document.getElementById("loadingmessage").innerHTML =
-      "loaded " + loader.loadedCount + " of " + loader.totalCount;
+      `loaded ${loader.loadedCount} of ${loader.totalCount}`;
     if (loader.loadedCount === loader.totalCount) {
       //Done loading
       loader.loaded = true;
@@ -1445,6 +1437,13 @@ class Box2d {
 }
 
 const box2d = new Box2d();
+
+/** @yields {Body} */
+function* iterBodies() {
+  for (let body = box2d.world.getBodyList(); body; body = body.getNext()) {
+    yield body;
+  }
+}
 
 // Exported only for the test harness; the browser entry point self-wires via
 // the DOMContentLoaded listener above and needs nothing from these.

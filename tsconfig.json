@@ -3,10 +3,10 @@
   // build step: the browser still loads js/game.js verbatim. `npm run typecheck`
   // runs `tsc`, which reads this config and only reports errors.
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2025",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2025", "DOM", "DOM.Iterable"],
 
     "allowJs": true,
     "checkJs": true,

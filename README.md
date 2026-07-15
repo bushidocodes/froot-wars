@@ -46,7 +46,7 @@ npm install
 Then:
 
 ```bash
-npm run lint   # ESLint over js/ and the tests
+npm run lint   # Biome lint + format check over js/ and the tests
 npm test       # Vitest unit tests (jsdom)
 ```
 

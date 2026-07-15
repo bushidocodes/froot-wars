@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { loadGame } from "./helpers/loadGame.js";
 
 const VALID_TYPES = ["ground", "block", "hero", "villain"];
@@ -35,7 +35,7 @@ describe("level data integrity", () => {
         for (const entity of level.entities) {
           expect(
             entities.definitions[entity.name],
-            `level ${index} entity "${entity.name}" has no definition`,
+            `level ${index} entity "${entity.name}" has no definition`
           ).toBeDefined();
         }
       });

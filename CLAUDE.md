@@ -31,13 +31,14 @@ errors.
 
 ## Tests, linting, and type-checking
 
-There is a Vitest unit-test suite, an ESLint config, and TypeScript type-checking
-(all dev-only; the game still ships with no build step and runs straight from the
-static files). Install dev dependencies once with `npm install`, then:
+There is a Vitest unit-test suite, a Biome config (lint + format), and TypeScript
+type-checking (all dev-only; the game still ships with no build step and runs
+straight from the static files). Install dev dependencies once with `npm install`,
+then:
 
 ```sh
 npm test         # Vitest, jsdom environment
-npm run lint
+npm run lint     # Biome check
 npm run typecheck # tsc --noEmit over the JSDoc-typed source
 ```
 

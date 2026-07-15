@@ -11,7 +11,7 @@ export interface Vec2 {
 export function Vec2(x: number, y: number): Vec2;
 
 /** Base type for the collision shapes the game builds. */
-export interface Shape {}
+export type Shape = {};
 
 /** Axis-aligned box shape, sized by half-width and half-height (in meters). */
 export class Box implements Shape {
@@ -72,7 +72,7 @@ export class World {
   constructor(gravity: Vec2);
   on(
     name: "post-solve",
-    listener: (contact: Contact, impulse: ContactImpulse) => void,
+    listener: (contact: Contact, impulse: ContactImpulse) => void
   ): void;
   on(name: string, listener: (...args: any[]) => void): void;
   createBody(def: BodyDef): Body;
@@ -81,6 +81,6 @@ export class World {
   step(
     timeStep: number,
     velocityIterations?: number,
-    positionIterations?: number,
+    positionIterations?: number
   ): void;
 }

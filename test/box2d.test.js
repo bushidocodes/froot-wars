@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { loadGame } from "./helpers/loadGame.js";
 
 describe("Box2d.step", () => {
@@ -19,7 +19,9 @@ describe("Box2d.step", () => {
 
 describe("collision damage (post-solve)", () => {
   function fakeContact(entityA, entityB) {
-    const fixture = (entity) => ({ getBody: () => ({ getUserData: () => entity }) });
+    const fixture = (entity) => ({
+      getBody: () => ({ getUserData: () => entity }),
+    });
     return {
       getFixtureA: () => fixture(entityA),
       getFixtureB: () => fixture(entityB),

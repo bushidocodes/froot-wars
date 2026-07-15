@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { loadGame } from "./helpers/loadGame.js";
 
 // game.showEndingScreen() is where a finished level is scored against the
@@ -22,7 +22,7 @@ describe("high-score persistence", () => {
     endLevel({ number: 0, score: 500 });
     expect(localStorage.getItem("highscore-level-0")).toBe("500");
     expect(document.getElementById("endingmessage").innerHTML).toContain(
-      "New best!",
+      "New best!"
     );
   });
 
@@ -30,7 +30,7 @@ describe("high-score persistence", () => {
     endLevel({ number: 0, score: 500, best: 800 });
     expect(localStorage.getItem("highscore-level-0")).toBe("800");
     expect(document.getElementById("endingmessage").innerHTML).toContain(
-      "Best: 800",
+      "Best: 800"
     );
   });
 
@@ -38,7 +38,7 @@ describe("high-score persistence", () => {
     endLevel({ number: 0, score: 800, best: 800 });
     expect(localStorage.getItem("highscore-level-0")).toBe("800");
     expect(document.getElementById("endingmessage").innerHTML).not.toContain(
-      "New best!",
+      "New best!"
     );
   });
 
@@ -55,7 +55,7 @@ describe("end-of-level messaging", () => {
     // Only meaningful if more than one level exists.
     if (levels.data.length > 1) {
       expect(document.getElementById("playnextlevel").style.display).toBe(
-        "block",
+        "block"
       );
     }
   });
@@ -70,7 +70,7 @@ describe("end-of-level messaging", () => {
   it("shows a failure message when the level is lost", () => {
     endLevel({ number: 0, score: 100, mode: "level-failure" });
     expect(document.getElementById("endingmessage").innerHTML).toContain(
-      "Failed",
+      "Failed"
     );
     expect(document.getElementById("playnextlevel").style.display).toBe("none");
   });

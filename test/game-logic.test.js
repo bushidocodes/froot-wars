@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { loadGame } from "./helpers/loadGame.js";
 
 describe("game.panTo (camera)", () => {
@@ -40,10 +40,10 @@ describe("game.countHeroesAndVillains", () => {
     game.countHeroesAndVillains();
 
     const expectedHeroes = levels.data[0].entities.filter(
-      (e) => e.type === "hero",
+      (e) => e.type === "hero"
     ).length;
     const expectedVillains = levels.data[0].entities.filter(
-      (e) => e.type === "villain",
+      (e) => e.type === "villain"
     ).length;
 
     expect(game.heroes.length).toBe(expectedHeroes);

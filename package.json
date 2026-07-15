@@ -6,15 +6,16 @@
   "packageManager": "pnpm@11.5.0",
   "type": "module",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "typecheck": "tsc",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "eslint": "^10.6.0",
-    "globals": "^17.7.0",
+    "@biomejs/biome": "^2.5.3",
     "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"

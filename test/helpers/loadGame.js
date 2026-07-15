@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 const GAME_SRC = fs.readFileSync(
   path.join(dirname, "..", "..", "js", "game.js"),
-  "utf8",
+  "utf8"
 );
 
 // --- Fake Planck.js -------------------------------------------------------
@@ -187,13 +187,13 @@ function fakeContext() {
       set() {
         return true;
       },
-    },
+    }
   );
 }
 
 function installFixture() {
   const layers = ELEMENT_IDS.map(
-    (id) => `<div id="${id}" class="gamelayer"></div>`,
+    (id) => `<div id="${id}" class="gamelayer"></div>`
   ).join("");
   document.body.innerHTML =
     layers +
@@ -223,12 +223,12 @@ export function loadGame() {
   // `planck` param, and drop the trailing `export { ... }`.
   const body = GAME_SRC.replace(
     /^import\s*\{([^}]*)\}\s*from\s*["'][^"']*["'];?\s*$/m,
-    "const {$1} = planck;",
+    "const {$1} = planck;"
   ).replace(/^export\s*\{[^}]*\};?\s*$/m, "");
 
   const factory = new Function(
     "planck",
-    body + "\nreturn { game, levels, loader, mouse, entities, box2d, Box2d };",
+    body + "\nreturn { game, levels, loader, mouse, entities, box2d, Box2d };"
   );
   const modules = factory(makePlanck());
 

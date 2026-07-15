@@ -1,5 +1,5 @@
 // @ts-check
-import { World, Vec2, Box, Circle } from "./planck.esm.js";
+import { Box, Circle, Vec2, World } from "./planck.esm.js";
 
 /** @typedef {import("./planck.esm.js").Body} Body */
 /** @typedef {import("./planck.esm.js").Contact} Contact */
@@ -69,11 +69,11 @@ const BOARD_WIDTH = 640;
 const BOARD_HEIGHT = 480;
 
 // Slingshot prong attachment points (pixel offsets from slingshotX/slingshotY)
-const SLINGSHOT_LEFT_PRONG_X  = 50;
-const SLINGSHOT_LEFT_PRONG_Y  = 25;
+const SLINGSHOT_LEFT_PRONG_X = 50;
+const SLINGSHOT_LEFT_PRONG_Y = 25;
 const SLINGSHOT_RIGHT_PRONG_X = 10;
 const SLINGSHOT_RIGHT_PRONG_Y = 30;
-const SLINGSHOT_CENTER_X      = 35; // midpoint used for impulse direction
+const SLINGSHOT_CENTER_X = 35; // midpoint used for impulse direction
 
 document.addEventListener("DOMContentLoaded", () => {
   debugLog("init");
@@ -239,11 +239,11 @@ const game = {
 
   countHeroesAndVillains() {
     const bodiesWithEntity = Iterator.from(iterBodies())
-      .filter(b => b.getUserData() != null)
+      .filter((b) => b.getUserData() != null)
       .toArray();
     const { hero = [], villain = [] } = Object.groupBy(
       bodiesWithEntity,
-      b => b.getUserData().type
+      (b) => b.getUserData().type
     );
     game.heroes = hero;
     game.villains = villain;
@@ -257,9 +257,9 @@ const game = {
     }
     const position = game.currentHero.getPosition();
     const distanceSquared =
-      Math.pow(position.x * box2d.scale - mouse.x - game.offsetLeft, 2) +
-      Math.pow(position.y * box2d.scale - mouse.y, 2);
-    const radiusSquared = Math.pow(game.currentHero.getUserData().radius, 2);
+      (position.x * box2d.scale - mouse.x - game.offsetLeft) ** 2 +
+      (position.y * box2d.scale - mouse.y) ** 2;
+    const radiusSquared = game.currentHero.getUserData().radius ** 2;
     return distanceSquared <= radiusSquared;
   },
 
@@ -337,8 +337,9 @@ const game = {
         const impulseScaleFactor = 0.75;
         const impulse = Vec2(
           (game.slingshotX + SLINGSHOT_CENTER_X - mouse.x - game.offsetLeft) *
-          impulseScaleFactor,
-          (game.slingshotY + SLINGSHOT_LEFT_PRONG_Y - mouse.y) * impulseScaleFactor
+            impulseScaleFactor,
+          (game.slingshotY + SLINGSHOT_LEFT_PRONG_Y - mouse.y) *
+            impulseScaleFactor
         );
         game.fireTimer = performance.now();
         // Discard the velocity accumulated while aiming: gravity tugs the
@@ -952,7 +953,7 @@ const levels = {
     const levelScreen = document.getElementById("levelselectscreen");
     levelScreen.innerHTML = html;
     levelScreen.querySelectorAll("input").forEach((input) => {
-      input.addEventListener("click", function () {
+      input.addEventListener("click", () => {
         levels.load(Number(input.value) - 1);
         levelScreen.style.display = "none";
       });
@@ -1071,8 +1072,12 @@ const mouse = {
     canvas.addEventListener("mouseup", mouse.mouseuphandler);
     canvas.addEventListener("mouseout", mouse.mouseuphandler);
     // Touch events for mobile devices
-    canvas.addEventListener("touchmove", mouse.touchmovehandler, { passive: false });
-    canvas.addEventListener("touchstart", mouse.touchstarthandler, { passive: false });
+    canvas.addEventListener("touchmove", mouse.touchmovehandler, {
+      passive: false,
+    });
+    canvas.addEventListener("touchstart", mouse.touchstarthandler, {
+      passive: false,
+    });
     canvas.addEventListener("touchend", mouse.mouseuphandler);
   },
   // Handles general mouse movement on the canvas
@@ -1447,4 +1452,4 @@ function* iterBodies() {
 
 // Exported only for the test harness; the browser entry point self-wires via
 // the DOMContentLoaded listener above and needs nothing from these.
-export { game, levels, loader, mouse, entities, box2d, Box2d };
+export { Box2d, box2d, entities, game, levels, loader, mouse };
